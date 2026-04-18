@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ชำระเงิน — สวนสัตว์เขาไม่รัก</title>
+  <meta name="description" content="ชำระเงินค่าบัตรเข้าชมสวนสัตว์เขาไม่รัก">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    body { background: #fff; }
+    .payment-page { padding: 2.5rem 0 5rem; }
+
+    /* ── Two-column layout ── */
+    .payment-layout {
+      display: grid;
+      grid-template-columns: 1fr 460px;
+      gap: 4rem;
+      align-items: flex-start;
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      .payment-layout {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+      }
+    }
+
+    /* ── LEFT: Order Summary bordered box ── */
+    .summary-box {
+      border: 1.5px solid var(--gray-300);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .summary-col-header {
+      display: flex;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--gray-700);
+    }
+    .summary-divider { height: 1px; background: var(--gray-300); }
+
+    .summary-row {
+      display: flex;
+      align-items: center;
+      padding: 1.1rem 1.5rem;
+      border-bottom: 1px solid var(--gray-100);
+      gap: 0.5rem;
+    }
+    .summary-row:last-of-type { border-bottom: none; }
+    .summary-item-label { flex: 1; font-size: 0.92rem; color: var(--gray-800); }
+    .summary-item-amount {
+      font-size: 0.92rem;
+      color: var(--gray-500);
+      min-width: 56px;
+      text-align: right;
+    }
+    .summary-item-curr { font-size: 0.9rem; color: var(--gray-400); }
+
+    /* Discount row */
+    .summary-discount-label { flex: 1; font-size: 0.82rem; color: var(--danger); }
+    .summary-discount-amount { font-size: 0.92rem; color: var(--danger); min-width: 56px; text-align: right; }
+
+    /* Total row */
+    .summary-total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--gray-300);
+    }
+    .summary-total-label { font-size: 1rem; font-weight: 700; }
+    .summary-total-amount { font-size: 1.1rem; font-weight: 700; }
+
+    /* ── RIGHT: Payment method ── */
+    .payment-method-wrap h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 1.1rem;
+    }
+
+    /* Underline tabs (Figma style) */
+    .pay-tabs {
+      display: flex;
+      border-bottom: 2px solid var(--gray-200);
+      margin-bottom: 1.5rem;
+      gap: 0;
+    }
+    .pay-tab {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.6rem 1.1rem 0.6rem 0;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--gray-500);
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-family: inherit;
+      border-bottom: 2.5px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.2s;
+    }
+    .pay-tab.active { color: var(--primary-dark); border-bottom-color: var(--primary); font-weight: 700; }
+    .pay-tab-icon {
+      width: 24px; height: 16px;
+      background: var(--gray-200);
+      border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem;
+    }
+    .pay-tab.active .pay-tab-icon { background: var(--primary); color: white; }
+
+    /* PromptPay tab content */
+    .pay-content { display: none; }
+    .pay-content.active { display: block; }
+
+    /* Thai QR Payment navy banner */
+    .thai-qr-banner {
+      background: #1a237e;
+      border-radius: 8px;
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      color: white;
+      margin-bottom: 1.1rem;
+    }
+    .thai-qr-logo {
+      width: 42px; height: 42px;
+      background: white;
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .thai-qr-logo svg { width: 26px; height: 26px; }
+    .thai-qr-text strong { display: block; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.03em; }
+    .thai-qr-text span { font-size: 0.72rem; opacity: 0.75; letter-spacing: 0.08em; }
+
+    .promptpay-logo-row {
+      text-align: center;
+      margin-bottom: 0.75rem;
+    }
+    .promptpay-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border: 1.5px solid var(--gray-300);
+      border-radius: 5px;
+      padding: 0.28rem 0.65rem;
+      color: #005BAA;
+    }
+    .promptpay-dot { width: 8px; height: 8px; background: #FFB800; border-radius: 50%; }
+
+    .qr-wrap {
+      text-align: center;
+      padding: 0.5rem 0 1rem;
+    }
+    .qr-img {
+      width: 155px;
+      height: 155px;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      display: block;
+      margin: 0 auto 0.9rem;
+    }
+    .qr-scan-text {
+      font-size: 0.82rem;
+      color: var(--primary);
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+    .qr-account-info {
+      font-size: 0.78rem;
+      color: var(--gray-500);
+      line-height: 1.7;
+    }
+
+    /* Credit Card form — borderless underline fields */
+    .cc-field { margin-bottom: 1.1rem; }
+    .cc-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: 0.35rem;
+    }
+    .cc-input {
+      width: 100%;
+      padding: 0.5rem 0;
+      border: none;
+      border-bottom: 1.5px solid var(--gray-300);
+      font-size: 0.9rem;
+      font-family: inherit;
+      color: var(--gray-800);
+      background: transparent;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .cc-input:focus { border-bottom-color: var(--primary); }
+    .cc-input::placeholder { color: var(--gray-400); }
+
+    .cc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+    .cc-card-icons {
+      display: flex; gap: 5px; align-items: center;
+      position: absolute; right: 0; bottom: 0.4rem;
+    }
+    .cc-card-icon {
+      font-size: 0.65rem;
+      background: var(--gray-100);
+      color: var(--gray-500);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-weight: 700;
+    }
+    .cc-input-rel { position: relative; }
+
+    /* Blue security notice */
+    .pay-notice {
+      background: #EFF6FF;
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      margin: 1.25rem 0;
+      font-size: 0.8rem;
+      color: #1D4ED8;
+      line-height: 1.5;
+    }
+    .pay-notice-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+    /* Pay button */
+    .btn-pay {
+      width: 100%;
+      padding: 1rem;
+      background: var(--primary-dark);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+      margin-top: 0.25rem;
+    }
+    .btn-pay:hover { background: #0f2d1e; }
+    .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Success modal */
+    .success-check {
+      width: 70px; height: 70px;
+      background: #DCFCE7;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 1.25rem;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="payment-page">
+    <div class="container">
+
+      <div class="section-heading" style="margin-bottom:0.25rem;">
+        <h2>ชำระเงิน</h2>
+      </div>
+
+      <div class="payment-layout" id="payment-body">
+
+        <!-- ════ LEFT: Order Summary ════ -->
+        <div>
+          <div class="summary-box">
+            <!-- Header -->
+            <div class="summary-col-header">
+              <span>รายละเอียด</span>
+              <span>ราคา</span>
+            </div>
+            <div class="summary-divider"></div>
+
+            <!-- Items (injected by JS) -->
+            <div id="summary-items"></div>
+
+            <!-- Discount row (shown if promo) -->
+            <div id="summary-discount-row" style="display:none;" class="summary-row">
+              <div class="summary-discount-label" id="summary-discount-label"></div>
+              <span class="summary-discount-amount" id="summary-discount-amount"></span>
+              <span class="summary-item-curr">฿</span>
+            </div>
+
+            <div class="summary-divider"></div>
+
+            <!-- Total -->
+            <div class="summary-total-row">
+              <span class="summary-total-label">ยอดรวม</span>
+              <span class="summary-total-amount" id="summary-total"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ════ RIGHT: Payment method ════ -->
+        <div class="payment-method-wrap">
+          <h3>เลือกวิธีการชำระเงิน</h3>
+
+          <!-- Underline tabs -->
+          <div class="pay-tabs">
+            <button class="pay-tab active" id="tab-promptpay" onclick="switchTab('promptpay')">
+              <span class="pay-tab-icon">▦</span>
+              PromtPay
+            </button>
+            <button class="pay-tab" id="tab-creditcard" onclick="switchTab('creditcard')">
+              <span class="pay-tab-icon">▬</span>
+              CreditCard
+            </button>
+          </div>
+
+          <!-- ── PromptPay Content ── -->
+          <div class="pay-content active" id="content-promptpay">
+
+            <!-- Thai QR Banner -->
+            <div class="thai-qr-banner">
+              <div class="thai-qr-logo">
+                <svg viewBox="0 0 24 24" fill="#1a237e">
+                  <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1"/>
+                  <rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/>
+                  <rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/>
+                </svg>
+              </div>
+              <div class="thai-qr-text">
+                <strong>THAI QR</strong>
+                <span>PAYMENT</span>
+              </div>
+            </div>
+
+            <!-- PromptPay logo -->
+            <div class="promptpay-logo-row">
+              <div class="promptpay-logo">
+                <div class="promptpay-dot"></div>
+                PromptPay
+              </div>
+            </div>
+
+            <!-- QR Code + Account info -->
+            <div class="qr-wrap">
+              <img
+                class="qr-img"
+                id="qr-code-img"
+                src="https://api.qrserver.com/v1/create-qr-code/?size=155x155&data=ZOOWEBB_MOCK_PAYMENT_2026"
+                alt="QR Code PromptPay"
+              >
+              <p class="qr-scan-text">สแกน QR เพื่อโอนเข้าบัญชี</p>
+              <div class="qr-account-info">
+                <div>ชื่อ: <span id="qr-account-name">สวนสัตว์เขาไม่รัก</span></div>
+                <div>บัญชี: xxx-x-x8561-x</div>
+                <div>เลขที่อ้างอิง: <span id="qr-ref">004999055689516</span></div>
+              </div>
+            </div>
+
+            <button class="btn-pay" onclick="processPayment('promptpay')">ชำระเงิน</button>
+          </div>
+
+          <!-- ── CreditCard Content ── -->
+          <div class="pay-content" id="content-creditcard">
+
+            <div class="cc-field">
+              <label class="cc-label">Email</label>
+              <input class="cc-input" id="cc-email" type="email" placeholder="Email address">
+            </div>
+
+            <div class="cc-field">
+              <label class="cc-label">Card number</label>
+              <div class="cc-input-rel">
+                <input class="cc-input" id="cc-number" type="text" placeholder="1234 1234 1234 1234"
+                  maxlength="19" oninput="formatCardNum(this)" style="padding-right:6rem;">
+                <div class="cc-card-icons">
+                  <span class="cc-card-icon" title="Visa">VISA</span>
+                  <span class="cc-card-icon" style="color:#eb001b;">MC</span>
+                  <span class="cc-card-icon" style="color:#007bc1;">AMEX</span>
+                  <span class="cc-card-icon">DIS</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cc-row">
+              <div class="cc-field">
+                <label class="cc-label">Expiration</label>
+                <input class="cc-input" id="cc-exp" type="text" placeholder="MM/YY" maxlength="5" oninput="formatExp(this)">
+              </div>
+              <div class="cc-field">
+                <label class="cc-label">CVC</label>
+                <input class="cc-input" id="cc-cvc" type="text" placeholder="CVC" maxlength="4">
+              </div>
+            </div>
+
+            <div class="cc-field">
+              <label class="cc-label">Country</label>
+              <select class="cc-input" id="cc-country" style="padding-right:1.5rem;">
+                <option value="TH" selected>Thailand</option>
+                <option value="US">United States</option>
+                <option value="GB">United Kingdom</option>
+                <option value="JP">Japan</option>
+                <option value="SG">Singapore</option>
+              </select>
+            </div>
+
+            <div class="pay-notice">
+              <span class="pay-notice-icon">📦</span>
+              <span>หลังจากส่งคำสั่งซื้อแล้ว<br>คุณจะถูกนำไปยังขั้นตอนการชำระเงินที่ปลอดภัย.</span>
+            </div>
+
+            <button class="btn-pay" onclick="processPayment('creditcard')">ชำระเงิน</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ════ Success Modal ════ -->
+  <div class="modal-overlay" id="success-modal">
+    <div class="modal" style="text-align:center; max-width:420px;">
+      <div class="success-check">✅</div>
+      <h3 style="margin-bottom:0.5rem;">ชำระเงินสำเร็จ!</h3>
+      <p style="color:var(--gray-500); font-size:0.9rem; margin-bottom:1.5rem;">ขอบคุณที่ซื้อบัตรเข้าชมสวนสัตว์เขาไม่รัก<br>กรุณาแสดงหมายเลขอ้างอิงที่ประตูทางเข้า</p>
+      <div style="background:var(--gray-50); border-radius:8px; padding:1rem; margin-bottom:1.5rem; font-size:0.88rem; color:var(--gray-700);">
+        <div>หมายเลขอ้างอิง: <strong id="success-ref">—</strong></div>
+        <div style="margin-top:0.4rem;">วันที่: <span id="success-date">—</span></div>
+        <div style="margin-top:0.4rem;">ยอดรวม: <strong id="success-total">—</strong></div>
+      </div>
+      <div style="display:flex; gap:0.75rem; justify-content:center;">
+        <a href="ticket-history.html" class="btn btn-outline btn-sm">ดูประวัติการซื้อ</a>
+        <a href="index.html" class="btn btn-primary btn-sm" onclick="AUTH.logout ? null : null">กลับหน้าหลัก</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/mockData.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const user = AUTH.requireAuth();
+    if (!user) throw new Error('Not logged in');
+
+    initNavbar('payment');
+    initFooter();
+    initToaster();
+
+    /* ── Populate summary ── */
+    (function buildSummary() {
+      const items = CART.getItems();
+      if (!items || items.length === 0) {
+        document.getElementById('payment-body').innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1;">
+            <div class="empty-icon">🛒</div>
+            <h3>ตะกร้าว่างเปล่า</h3>
+            <p>กรุณาเลือกบัตรก่อนชำระเงิน</p>
+            <a href="tickets.html" class="btn btn-primary" style="margin-top:1rem;">ซื้อบัตร</a>
+          </div>
+        `;
+        return;
+      }
+
+      const subtotal = CART.getSubtotal();
+      const discount = CART.getDiscount();
+      const total    = CART.getTotal();
+      const promo    = CART.getPromo();
+
+      // Item rows
+      document.getElementById('summary-items').innerHTML = items.map(item => `
+        <div class="summary-row">
+          <div class="summary-item-label">บัตรเข้าชมราคา${item.type} x${item.qty}</div>
+          <span class="summary-item-amount">${item.isFree ? 0 : item.qty * item.price}</span>
+          <span class="summary-item-curr">฿</span>
+        </div>
+      `).join('');
+
+      // Discount row
+      if (discount > 0 && promo) {
+        document.getElementById('summary-discount-row').style.display = 'flex';
+        document.getElementById('summary-discount-label').textContent = `ใช้โค้ดส่วนลด: ${promo.code} แล้ว`;
+        document.getElementById('summary-discount-amount').textContent = `-${discount}`;
+      }
+
+      // Total
+      document.getElementById('summary-total').textContent = `${total}฿`;
+
+      // Generate ref number
+      const ref = '00' + Math.floor(Math.random() * 9e12).toString().padStart(13, '0');
+      document.getElementById('qr-ref').textContent = ref;
+
+      // QR dynamic amount
+      const qrData = `ZOOZOO_PAYMENT_${total}_${ref}`;
+      document.getElementById('qr-code-img').src =
+        `https://api.qrserver.com/v1/create-qr-code/?size=155x155&data=${encodeURIComponent(qrData)}`;
+    })();
+
+    /* ── Tab switch ── */
+    function switchTab(tab) {
+      document.querySelectorAll('.pay-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.pay-content').forEach(c => c.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      document.getElementById('content-' + tab).classList.add('active');
+    }
+
+    /* ── Card number formatter ── */
+    function formatCardNum(el) {
+      let v = el.value.replace(/\D/g, '').substring(0, 16);
+      el.value = v.replace(/(.{4})/g, '$1 ').trim();
+    }
+    function formatExp(el) {
+      let v = el.value.replace(/\D/g, '').substring(0, 4);
+      if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2);
+      el.value = v;
+    }
+
+    /* ── Payment processing ── */
+    function processPayment(method) {
+      const total = CART.getTotal();
+      const items = CART.getItems();
+      if (!items.length) return;
+
+      // Basic credit card validation
+      if (method === 'creditcard') {
+        const email = document.getElementById('cc-email').value.trim();
+        const num   = document.getElementById('cc-number').value.replace(/\s/g,'');
+        const exp   = document.getElementById('cc-exp').value;
+        const cvc   = document.getElementById('cc-cvc').value;
+        if (!email || !num || num.length < 16 || !exp || !cvc) {
+          showToast('กรุณากรอกข้อมูลบัตรให้ครบถ้วน', 'error');
+          return;
+        }
+      }
+
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = 'กำลังดำเนินการ...';
+
+      setTimeout(() => {
+        const promo    = CART.getPromo();
+        const discount = CART.getDiscount();
+
+        // Save to mock history (all items at once)
+        addTicketHistory(
+          user.id,
+          items,
+          discount,
+          promo?.code || '',
+          method === 'promptpay' ? 'PromptPay' : 'บัตรเครดิต'
+        );
+
+        CART.clear();
+        updateCartBadge();
+
+        // Fill success modal
+        const ref = document.getElementById('qr-ref')?.textContent || '—';
+        document.getElementById('success-ref').textContent   = '#' + ref.slice(-8);
+        document.getElementById('success-date').textContent  =
+          new Date().toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric' });
+        document.getElementById('success-total').textContent = `฿${total}`;
+
+        openModal('success-modal');
+        btn.disabled = false;
+        btn.textContent = 'ชำระเงิน';
+      }, 1600);
+    }
+
+    /* Block modal overlay from closing on user click (require button press) */
+    document.getElementById('success-modal').addEventListener('click', e => e.stopPropagation());
+  </script>
+</body>
+</html>

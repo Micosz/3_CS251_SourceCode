@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เพิ่มข้อมูลสัตว์ — Admin</title>
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body class="admin-body">
+
+  <main class="admin-main">
+    <header class="admin-header" style="display:flex; align-items:center; gap:1.5rem;">
+      <a href="animals.html" style="text-decoration:none; font-size:1.8rem; color:var(--admin-text);">❮</a>
+      <h1 class="admin-title">เพิ่มข้อมูลสัตว์</h1>
+    </header>
+
+    <div class="admin-form-container">
+      <form id="add-animal-form">
+        <div class="form-grid">
+          <div class="admin-form-group">
+            <label class="label-required">หมายเลขโซน</label>
+            <select class="admin-form-control" name="zoneId" required>
+              <option value="#000001">#000001</option>
+              <option value="#000002">#000002</option>
+              <option value="#000003">#000003</option>
+            </select>
+          </div>
+          <div class="admin-form-group">
+            <label class="label-required">หมายเลขกรง</label>
+            <select class="admin-form-control" name="cageId" required>
+              <option value="#1">#1</option>
+              <option value="#2">#2</option>
+              <option value="#3">#3</option>
+            </select>
+          </div>
+          <div class="admin-form-group">
+            <label class="label-required">หมายเลขสายพันธุ์</label>
+            <select class="admin-form-control" name="speciesId" required>
+              <option value="#11">#11 ฮิปโปโปเตมัส</option>
+              <option value="#12">#12 สิงโต</option>
+              <option value="#13">#13 ช้าง</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="admin-form-group">
+            <label class="label-required">ชื่อ</label>
+            <input type="text" class="admin-form-control" name="name" placeholder="พิมพ์ชื่อ" required>
+          </div>
+          <div class="admin-form-group">
+            <label class="label-required">เพศ</label>
+            <select class="admin-form-control" name="gender" required>
+              <option value="ตัวผู้">ตัวผู้</option>
+              <option value="ตัวเมีย">ตัวเมีย</option>
+            </select>
+          </div>
+          <div class="admin-form-group">
+            <label class="label-required">วันเกิด</label>
+            <input type="date" class="admin-form-control" name="birthDate" value="2026-02-11" required>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="admin-form-group">
+            <label>วันที่เข้า</label>
+            <input type="date" class="admin-form-control" name="entryDate" value="2026-02-18">
+          </div>
+          <div class="admin-form-group">
+            <label>หมายเลขพ่อพันธุ์</label>
+            <select class="admin-form-control" name="fatherId">
+              <option value="">ไม่มี</option>
+              <option value="#1-1">#1-1</option>
+              <option value="#1-2">#1-2</option>
+            </select>
+          </div>
+          <div class="admin-form-group">
+            <label>หมายเลขแม่พันธุ์</label>
+            <select class="admin-form-control" name="motherId">
+              <option value="">ไม่มี</option>
+              <option value="#1-1">#1-1</option>
+              <option value="#1-2">#1-2</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:2rem;">
+          <button type="submit" class="btn-confirm">เพิ่มข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script src="../js/mockData.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    initAdminLayout('animals');
+
+    document.getElementById('add-animal-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const data = Object.fromEntries(formData.entries());
+      
+      console.log('New Animal Data:', data);
+      alert('เพิ่มข้อมูลสำเร็จ!');
+      window.location.href = 'animals.html';
+    });
+  </script>
+</body>
+</html>

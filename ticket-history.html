@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ประวัติการซื้อบัตรเข้าชม — สวนสัตว์เขาไม่รัก</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    body { background: #fff; }
+
+    .history-page { padding: 2.5rem 0 5rem; }
+
+    /* Figma-style table */
+    .history-table-wrap { margin-top: 2rem; }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .history-table th {
+      text-align: left;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      padding: 0.75rem 0;
+      border-bottom: 1.5px solid var(--gray-300);
+    }
+
+    .history-table td {
+      padding: 1.2rem 0;
+      font-size: 0.95rem;
+      color: var(--gray-700);
+      border-bottom: 1px solid var(--gray-200);
+      vertical-align: middle;
+    }
+
+    .history-table tr:last-child td { border-bottom: none; }
+
+    .history-table .ticket-id {
+      font-weight: 700;
+      color: var(--gray-900);
+      font-size: 0.97rem;
+    }
+
+    .history-table .ticket-date  { color: var(--gray-500); }
+    .history-table .ticket-type  { color: var(--gray-800); }
+    .history-table .ticket-price { color: var(--gray-800); }
+
+    /* Figma pill button: green, rounded */
+    .btn-detail {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.42rem 1.1rem;
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .btn-detail:hover { background: var(--primary-dark); }
+
+    /* Detail modal overlay */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(3px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999; padding: 1.5rem;
+      opacity: 0; visibility: hidden;
+      transition: all 0.25s ease;
+    }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+
+    .modal {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.2);
+      transform: translateY(20px);
+      transition: all 0.25s ease;
+    }
+    .modal-overlay.active .modal { transform: translateY(0); }
+
+    .modal-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .modal-close {
+      width: 30px; height: 30px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--gray-500); font-size: 1.1rem;
+      cursor: pointer;
+    }
+    .modal-close:hover { background: var(--gray-100); }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--gray-100);
+      font-size: 0.9rem;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { color: var(--gray-500); }
+    .detail-value { color: var(--gray-900); font-weight: 500; text-align: right; }
+
+    /* QR placeholder */
+    .qr-box {
+      width: 110px; height: 110px;
+      border: 2px solid var(--gray-200);
+      border-radius: 8px;
+      margin: 0 auto 1rem;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--gray-50);
+    }
+    .qr-box svg { width: 60px; height: 60px; opacity: 0.3; }
+  </style>
+</head>
+<body>
+
+  <main class="history-page">
+    <div class="container">
+
+      <div class="section-heading">
+        <h2>ประวัติการซื้อบัตรเข้าชม</h2>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" id="history-empty" style="display:none;">
+        <div class="empty-icon">🎟️</div>
+        <h3>ยังไม่มีประวัติการซื้อ</h3>
+        <p>คุณยังไม่เคยซื้อบัตรเข้าชมมาก่อน</p>
+        <a href="tickets.html" class="btn btn-primary" style="margin-top:1rem;">🎟️ ซื้อบัตรเลย</a>
+      </div>
+
+      <!-- Figma-style clean table -->
+      <div class="history-table-wrap" id="history-table">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Ticket ID</th>
+              <th>วันที่ซื้อ</th>
+              <th>ประเภทบัตร</th>
+              <th>ราคา</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody">
+            <!-- Injected by JS -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Ticket Detail Modal -->
+  <div class="modal-overlay" id="detail-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h4 style="font-size:1.1rem; font-weight:700;">รายละเอียดบัตร</h4>
+        <button class="modal-close" onclick="closeDetailModal()">✕</button>
+      </div>
+
+      <!-- QR placeholder -->
+      <div class="qr-box">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 3h7v7H3V3zm2 2v3h3V5H5zm9-2h7v7h-7V3zm2 2v3h3V5h-3zM3 14h7v7H3v-7zm2 2v3h3v-3H5zm9 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4-2h2v2h-2v-2zm0 4h2v2h-2v-2z"/>
+        </svg>
+      </div>
+      <div style="text-align:center; margin-bottom:1.25rem;">
+        <span class="btn-detail" style="pointer-events:none; background:var(--primary-light);" id="detail-status">✅ ชำระแล้ว</span>
+      </div>
+
+      <div id="detail-content"></div>
+    </div>
+  </div>
+
+  <script src="js/mockData.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    const user = AUTH.requireAuth();
+    if (!user) throw new Error('Not logged in');
+
+    initNavbar('history');
+    initFooter();
+
+    // Format date: "Apr 12,2026"
+    function formatDate(iso) {
+      const d = new Date(iso);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${months[d.getMonth()]} ${d.getDate()},${d.getFullYear()}`;
+    }
+
+    const history = getUserTicketHistory(user.id);
+
+    if (!history || history.length === 0) {
+      document.getElementById('history-empty').style.display = 'block';
+      document.getElementById('history-table').style.display = 'none';
+    } else {
+      const tbody = document.getElementById('history-tbody');
+      tbody.innerHTML = history.map(t => `
+        <tr>
+          <td class="ticket-id">#${t.id.replace('TKT-','')}</td>
+          <td class="ticket-date">${formatDate(t.date)}</td>
+          <td class="ticket-type">${t.type}</td>
+          <td class="ticket-price">${t.total} ฿</td>
+          <td style="text-align:right;">
+            <a href="ticket-detail.html?id=${t.id}" class="btn-detail">ดูรายละเอียด</a>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function showDetail(ticket) {
+      const rows = [
+        { label: 'หมายเลขบัตร',   value: `<strong>${ticket.id}</strong>` },
+        { label: 'ประเภทบัตร',    value: ticket.type },
+        { label: 'จำนวน',         value: `${ticket.quantity} ใบ` },
+        { label: 'ราคาต่อใบ',     value: ticket.unitPrice === 0 ? 'ฟรี' : `฿${ticket.unitPrice}` },
+        { label: 'ส่วนลด',        value: ticket.discount > 0 ? `฿${ticket.discount} (${ticket.promo || ''})` : 'ไม่มี' },
+        { label: 'ยอดรวม',        value: `<strong>฿${ticket.total}</strong>` },
+        { label: 'วิธีชำระเงิน', value: ticket.paymentMethod },
+        { label: 'วันที่ซื้อ',   value: formatDate(ticket.date) },
+      ];
+
+      document.getElementById('detail-content').innerHTML = rows.map(r => `
+        <div class="detail-row">
+          <span class="detail-label">${r.label}</span>
+          <span class="detail-value">${r.value}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('detail-modal').classList.add('active');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detail-modal').classList.remove('active');
+    }
+
+    // Close on overlay click
+    document.getElementById('detail-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeDetailModal();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ข้อมูลสัตว์ — สวนสัตว์เขาไม่รัก</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    body { background: #fff; }
+    .animal-detail-page { padding: 2.5rem 0 5rem; }
+
+    /* Zone label — matches Figma "— Zone 1" heading style */
+    .zone-label {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 2.5rem;
+    }
+    .zone-label::before {
+      content: '';
+      display: block;
+      width: 48px;
+      height: 4px;
+      background: var(--primary);
+      border-radius: 99px;
+      flex-shrink: 0;
+    }
+
+    /* Main two-column layout */
+    .animal-detail-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 4rem;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 992px) {
+      .animal-detail-layout {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+      .animal-photo-wrap {
+        min-height: auto;
+      }
+      .nearby-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 576px) {
+      .nearby-grid {
+        grid-template-columns: 1fr;
+      }
+      .page-breadcrumb {
+        font-size: 0.75rem;
+        flex-wrap: wrap;
+      }
+    }
+
+    /* LEFT: image on white background (Figma: transparent/cutout photo) */
+    .animal-photo-col {
+      text-align: center;
+    }
+
+    .animal-photo-wrap {
+      width: 100%;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 280px;
+      margin-bottom: 1.25rem;
+    }
+
+    .animal-photo {
+      max-width: 100%;
+      max-height: 320px;
+      object-fit: contain;
+    }
+
+    .animal-name-block {
+      text-align: center;
+    }
+    .animal-name-th {
+      font-size: 1.05rem;
+      color: var(--gray-800);
+      margin-bottom: 0.3rem;
+    }
+    .animal-species-th {
+      font-size: 1rem;
+      color: var(--gray-600);
+    }
+
+    /* RIGHT: info rows with green accent lines below each (Figma style) */
+    .animal-info-col { padding-top: 0.5rem; }
+
+    .animal-info-item {
+      margin-bottom: 0.25rem;
+    }
+
+    .animal-info-text {
+      font-size: 1.075rem;
+      color: var(--gray-800);
+      line-height: 1.5;
+      padding-bottom: 0.75rem;
+    }
+
+    .animal-info-text strong {
+      font-weight: 700;
+    }
+
+    /* Green accent line below each info item (Figma style) */
+    .animal-info-divider {
+      width: 48px;
+      height: 3.5px;
+      background: var(--primary);
+      border-radius: 99px;
+      margin-bottom: 1.15rem;
+    }
+
+    .animal-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Nearby section */
+    .nearby-section {
+      margin-top: 4rem;
+      padding-top: 3rem;
+      border-top: 1px solid var(--gray-200);
+    }
+    .nearby-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin-top: 1.5rem;
+    }
+    .nearby-card {
+      background: var(--gray-50);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .nearby-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .nearby-card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+    }
+    .nearby-card-body { padding: 0.85rem 1rem; }
+    .nearby-name { font-weight: 700; font-size: 0.95rem; }
+    .nearby-species { font-size: 0.8rem; color: var(--gray-500); margin-top: 0.15rem; }
+  </style>
+</head>
+<body>
+
+  <main class="animal-detail-page">
+    <div class="container">
+
+      <div class="page-breadcrumb">
+        <a href="index.html">หน้าหลัก</a>
+        <span>›</span>
+        <a href="animals.html">สัตว์ในสวน</a>
+        <span>›</span>
+        <span id="breadcrumb-name">ข้อมูลสัตว์</span>
+      </div>
+
+      <!-- Not found state -->
+      <div id="not-found" style="display:none;" class="empty-state">
+        <div class="empty-icon">🐾</div>
+        <h3>ไม่พบข้อมูลสัตว์</h3>
+        <a href="animals.html" class="btn btn-primary">← กลับรายการสัตว์</a>
+      </div>
+
+      <!-- Main detail -->
+      <div id="animal-detail">
+        <!-- Zone label: "— Zone 1" -->
+        <div class="zone-label" id="zone-label">Zone</div>
+
+        <div class="animal-detail-layout">
+          <!-- LEFT: Photo + name -->
+          <div class="animal-photo-col">
+            <div class="animal-photo-wrap">
+              <img
+                id="animal-img"
+                class="animal-photo"
+                src=""
+                alt=""
+                onerror="this.src='https://placehold.co/280x280/F3F4F6/9CA3AF?text=🐾'"
+              >
+            </div>
+            <div class="animal-name-block">
+              <div class="animal-name-th" id="animal-name-display">—</div>
+              <div class="animal-species-th" id="animal-species-display">—</div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Info rows -->
+          <div class="animal-info-col">
+            <div id="animal-info-rows">
+              <!-- Injected by JS -->
+            </div>
+            <div class="animal-actions">
+              <a href="animals.html" class="btn btn-outline">← กลับรายการสัตว์</a>
+              <a href="tickets.html" class="btn btn-primary">🎟️ ซื้อบัตรเข้าชม</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nearby animals -->
+      <div class="nearby-section" id="nearby-section" style="display:none;">
+        <div class="section-heading">
+          <h3 id="nearby-title">สัตว์อื่นในโซน</h3>
+        </div>
+        <div class="nearby-grid" id="nearby-grid"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="js/mockData.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    initNavbar('animals');
+    initFooter();
+
+    const params   = new URLSearchParams(window.location.search);
+    const animal   = getAnimalById(params.get('id'));
+
+    if (!animal) {
+      document.getElementById('not-found').style.display = 'block';
+      document.getElementById('animal-detail').style.display = 'none';
+      document.getElementById('nearby-section').style.display = 'none';
+    } else {
+      document.title = `${animal.nameTH} — สวนสัตว์เขาไม่รัก`;
+      document.getElementById('breadcrumb-name').textContent = animal.nameTH;
+
+      // Zone label
+      const zone = MOCK_ZONES.find(z => z.id === animal.zoneId);
+      document.getElementById('zone-label').textContent = zone ? zone.name : animal.zone;
+
+      // Photo
+      const img = document.getElementById('animal-img');
+      img.src = animal.image || animal.cardImage;
+      img.alt = animal.nameTH;
+
+      // Name below photo (Figma format: "ชื่อ : น้องโต")
+      document.getElementById('animal-name-display').textContent    = `ชื่อ : ${animal.nameTH}`;
+      document.getElementById('animal-species-display').textContent = `ชื่อสายพันธุ์ : ${animal.speciesTH}`;
+
+      // Info rows with green divider lines after each
+      const infoData = [
+        { label: 'เพศ',        value: animal.gender },
+        { label: 'อายุ',       value: animal.ageDisplay, bold: true },
+        { label: 'ถิ่นกำเนิด', value: animal.origin },
+        { label: 'รหัสกรง',   value: animal.cageCode, bold: true },
+      ];
+
+      document.getElementById('animal-info-rows').innerHTML = infoData.map(r => `
+        <div class="animal-info-item">
+          <div class="animal-info-text">
+            ${r.label}: ${r.bold ? `<strong>${r.value}</strong>` : r.value}
+          </div>
+          <div class="animal-info-divider"></div>
+        </div>
+      `).join('');
+
+      // Nearby animals
+      const nearby = MOCK_ANIMALS.filter(a => a.zoneId === animal.zoneId && a.id !== animal.id).slice(0, 3);
+      if (nearby.length > 0) {
+        const nearbySection = document.getElementById('nearby-section');
+        nearbySection.style.display = 'block';
+        document.getElementById('nearby-title').textContent = `สัตว์อื่นใน ${zone ? zone.name : animal.zone}`;
+        document.getElementById('nearby-grid').innerHTML = nearby.map(a => `
+          <a href="animal-detail.html?id=${a.id}" class="nearby-card">
+            <img
+              src="${a.cardImage}"
+              alt="${a.nameTH}"
+              onerror="this.src='https://placehold.co/400x160/F3F4F6/9CA3AF?text=🐾'"
+            >
+            <div class="nearby-card-body">
+              <div class="nearby-name">${a.nameTH}</div>
+              <div class="nearby-species">${a.speciesTH}</div>
+            </div>
+          </a>
+        `).join('');
+      }
+    }
+  </script>
+</body>
+</html>

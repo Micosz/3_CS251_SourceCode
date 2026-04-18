@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ล็อกอิน — สวนสัตว์เขาไม่รัก</title>
+  <meta name="description" content="ล็อกอินเพื่อซื้อบัตรเข้าชมสวนสัตว์เขาไม่รักออนไลน์">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body class="auth-page">
+
+  <!-- Background -->
+  <div class="auth-bg">
+    <img src="images/ZOOLoginBG.png" alt="Zoo background" class="soul-ghost">
+    <img src="images/ZOOLoginBG.png" alt="Zoo background" class="soul-main">
+  </div>
+
+  <!-- Auth Wrapper -->
+  <div class="auth-wrapper">
+    <div class="auth-card">
+
+
+      <!-- Title -->
+      <h1 class="auth-title">Login</h1>
+      <p class="auth-subtitle"></p>
+
+
+      <!-- Error msg -->
+      <div class="auth-error" id="login-error"></div>
+
+      <!-- Form -->
+      <form class="auth-form" id="login-form" novalidate>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <input
+            type="email"
+            class="form-control"
+            id="email"
+            placeholder="username@gmail.com"
+            autocomplete="email"
+            required
+          >
+          <div class="form-error" id="email-error">กรุณากรอกอีเมลที่ถูกต้อง</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-group">
+            <input
+              type="password"
+              class="form-control"
+              id="password"
+              placeholder="Password"
+              autocomplete="current-password"
+              required
+            >
+            <span class="input-icon-right" data-pw-toggle="password" title="แสดง/ซ่อนรหัสผ่าน">🙈</span>
+          </div>
+          <div class="form-error" id="password-error">กรุณากรอกรหัสผ่าน</div>
+        </div>
+
+        <div class="auth-forgot">
+          <a href="#">Forgot Password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="login-btn">
+          Sign in
+        </button>
+
+      </form>
+
+      <!-- Register link -->
+      <p class="auth-register-link">
+        Don't have an account yet?
+        <a href="register.html">Register for free</a>
+      </p>
+
+
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/mockData.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // If already logged in, redirect
+    (function() {
+      const user = AUTH.getUser();
+      if (user) {
+        window.location.href = user.role === 'admin' ? 'admin/users.html' : 'index.html';
+      }
+    })();
+
+    // Init password toggles
+    initPasswordToggles();
+
+    // Form submission
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      clearErrors();
+
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      let valid = true;
+
+      if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+        showFieldError('email-error'); valid = false;
+      }
+      if (!password) {
+        showFieldError('password-error'); valid = false;
+      }
+      if (!valid) return;
+
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true;
+      btn.textContent = '⏳ กำลังเข้าสู่ระบบ...';
+
+      setTimeout(() => {
+        const result = AUTH.login(email, password);
+        if (result.success) {
+          const redirect = result.user.role === 'admin' ? 'admin/users.html' : 'index.html';
+          window.location.href = redirect;
+        } else {
+          showAuthError(result.message);
+          btn.disabled = false;
+          btn.textContent = 'Sign in';
+        }
+      }, 600);
+    });
+
+    function showFieldError(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('show');
+    }
+    function clearErrors() {
+      document.querySelectorAll('.form-error').forEach(e => e.classList.remove('show'));
+      document.getElementById('login-error').classList.remove('show');
+    }
+    function showAuthError(msg) {
+      const el = document.getElementById('login-error');
+      el.textContent = '⚠️ ' + msg;
+      el.classList.add('show');
+    }
+  </script>
+</body>
+</html>

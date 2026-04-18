@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายละเอียดสัตว์ — Admin</title>
+  <link rel="stylesheet" href="../css/admin.css">
+  <style>
+    .detail-container {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      min-height: 500px;
+    }
+    .detail-sidebar {
+      width: 200px;
+      border-right: 1px solid var(--admin-border);
+      display: flex;
+      flex-direction: column;
+    }
+    .detail-label-item {
+      padding: 1.25rem 2rem;
+      font-weight: 600;
+      color: #333;
+      text-align: right;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .detail-content {
+      flex: 1;
+      position: relative;
+    }
+    .detail-value-item {
+      padding: 1.25rem 3rem;
+      color: #666;
+      height: 64px;
+      display: flex;
+      align-items: center;
+    }
+    .value-box {
+      font-size: 1rem;
+      color: #444;
+    }
+
+    /* Edit Mode Styles */
+    .edit-input {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      width: 220px;
+    }
+    .edit-select {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      width: 220px;
+      background: #f8fafc;
+    }
+
+    /* Header Icons */
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    .icon-btn-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      font-size: 1.1rem;
+      transition: transform 0.2s;
+    }
+    .icon-btn-circle:hover { transform: scale(1.1); }
+    .icon-btn-circle.cancel { background: #ff5f5f; color: white; }
+    .icon-btn-circle.save { background: #4df04d; color: white; box-shadow: 0 4px 10px rgba(77, 240, 77, 0.4); }
+
+    .edit-toggle-btn {
+      background: white;
+      border: 1px solid #cbd5e0;
+      padding: 0.4rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    #edit-icons, #save-icons { display: none; }
+    .page-view #edit-icons { display: flex; }
+    .page-edit #save-icons { display: flex; }
+
+    .page-view .edit-input, .page-view .edit-select { display: none; }
+    .page-edit .value-box { display: none; }
+
+    .delete-container {
+      position: absolute;
+      bottom: 2rem;
+      right: 2rem;
+    }
+  </style>
+</head>
+<body class="admin-body page-view" id="main-body">
+
+  <main class="admin-main">
+    <header class="admin-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="display:flex; align-items:center; gap:2rem;">
+        <a href="species-detail.html?id=11" style="text-decoration:none; color:var(--admin-text); font-size:1.5rem;">❮</a>
+        <h1 class="admin-title">ฮิปโปโปเตมัส <span style="color:var(--admin-muted); font-weight:400; font-size:1.5rem;">#11</span></h1>
+        <span style="color:var(--admin-muted); font-size:0.9rem; margin-left:1rem;">วันที่แก้ไขล่าสุด: Feb 29, 2026</span>
+      </div>
+
+      <div class="header-actions">
+        <!-- View Mode Actions -->
+        <div id="edit-icons">
+          <button class="edit-toggle-btn" onclick="setMode('edit')">แก้ไข 📝</button>
+        </div>
+        <!-- Edit Mode Actions -->
+        <div id="save-icons">
+          <button class="icon-btn-circle cancel" onclick="setMode('view')">✕</button>
+          <button class="icon-btn-circle save" onclick="saveData()">✓</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="detail-container">
+      <div class="detail-sidebar">
+        <div class="detail-label-item">หมายเลขโซน</div>
+        <div class="detail-label-item">หมายเลขกรง</div>
+        <div class="detail-label-item">หมายเลขสัตว์</div>
+        <div class="detail-label-item">ชื่อ</div>
+        <div class="detail-label-item">เพศ</div>
+        <div class="detail-label-item">วันเกิด</div>
+        <div class="detail-label-item">วันที่เข้า</div>
+        <div class="detail-label-item">หมายเลขพ่อพันธุ์</div>
+        <div class="detail-label-item">หมายเลขแม่พันธุ์</div>
+      </div>
+      <div class="detail-content">
+        <div class="detail-value-item">
+          <span class="value-box">#000001</span>
+          <select class="edit-select"><option>#000001</option><option>#111111</option></select>
+        </div>
+        <div class="detail-value-item">
+          <span class="value-box">#1</span>
+          <select class="edit-select"><option>#1</option><option>#2</option></select>
+        </div>
+        <div class="detail-value-item">
+          <span class="value-box">#1-1</span>
+          <!-- ID is usually not editable -->
+        </div>
+        <div class="detail-value-item">
+          <span class="value-box" id="name-display">น้องหมูมะนาว</span>
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <input type="text" class="edit-input" id="name-input" value="น้องหมูมะนาว">
+            <span style="color:red; cursor:pointer;" class="edit-input" onclick="document.getElementById('name-input').value=''">✕</span>
+          </div>
+        </div>
+        <div class="detail-value-item"><span class="value-box">ตัวผู้</span></div>
+        <div class="detail-value-item"><span class="value-box">Feb 11, 2026</span></div>
+        <div class="detail-value-item"><span class="value-box">Feb 18, 2026</span></div>
+        <div class="detail-value-item"><span class="value-box">-</span></div>
+        <div class="detail-value-item"><span class="value-box">-</span></div>
+
+        <div class="delete-container page-view-only">
+          <button class="btn-cancel" style="padding: 0.8rem 2.5rem; font-size:1rem;" onclick="deleteAnimal()">ลบข้อมูล</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../js/mockData.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    initAdminLayout('animals');
+
+    function setMode(mode) {
+      const body = document.getElementById('main-body');
+      const delBtn = document.querySelector('.delete-container');
+      
+      if (mode === 'edit') {
+        body.classList.remove('page-view');
+        body.classList.add('page-edit');
+        delBtn.style.display = 'none';
+      } else {
+        body.classList.remove('page-edit');
+        body.classList.add('page-view');
+        delBtn.style.display = 'block';
+      }
+    }
+
+    function saveData() {
+      const newName = document.getElementById('name-input').value;
+      document.getElementById('name-display').textContent = newName;
+      setMode('view');
+      alert('บันทึกข้อมูลสำเร็จ!');
+    }
+
+    function deleteAnimal() {
+      if (confirm('คุณแน่ใจว่าต้องการลบข้อมูลสัตว์ตัวนี้?')) {
+        alert('ลบข้อมูลสำเร็จ');
+        window.location.href = 'species-detail.html?id=11';
+      }
+    }
+  </script>
+</body>
+</html>

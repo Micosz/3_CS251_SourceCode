@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการระบบตั๋ว — Admin</title>
+  <link rel="stylesheet" href="../css/admin.css">
+  <style>
+    /* Inline editing style */
+    .edit-mode .display-val { display: none; }
+    .display-mode .edit-ctrls { display: none; }
+    .edit-ctrls {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .qty-display {
+      font-weight: 500;
+      min-width: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body class="admin-body">
+
+  <main class="admin-main">
+    <header class="admin-header">
+      <h1 class="admin-title">จัดการระบบตั๋ว</h1>
+    </header>
+
+    <div class="admin-card">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>UserID</th>
+            <th>TicketID</th>
+            <th>สถานะ</th>
+            <th>Promocode</th>
+            <th>จำนวน</th>
+            <th style="text-align:right;">การจัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="ticket-list">
+          <!-- Injected by JS -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="../js/mockData.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    initAdminLayout('tickets');
+
+    let historyTable = [];
+
+    function renderTickets() {
+      const tbody = document.getElementById('ticket-list');
+      // For admin demo, we display all history
+      // Usually would come from a global admin view of all users
+      // Here we simulate by showing current user's history or mock data
+      const users = getAllUsers();
+      let allHistory = [];
+      users.forEach(u => {
+        const uHistory = getTicketHistory(u.id);
+        uHistory.forEach(t => allHistory.push({ ...t, userId: u.id }));
+      });
+
+      // If empty, add a dummy one like in screenshot
+      if (allHistory.length === 0) {
+        allHistory.push({
+          id: '555555',
+          userId: '111111',
+          status: 'ยังไม่ใช้',
+          promo: '3sale',
+          quantity: 3
+        });
+      }
+
+      historyTable = allHistory;
+
+      tbody.innerHTML = allHistory.map((t, idx) => `
+        <tr id="row-${idx}" class="display-mode">
+          <td>#${t.userId.toString().slice(-6)}</td>
+          <td>#${t.id.slice(-6)}</td>
+          <td>${t.status || 'ยังไม่ใช้'}</td>
+          <td>${t.promo || '-'}</td>
+          <td>
+            <span class="display-val">${t.quantity}</span>
+            <div class="edit-ctrls">
+                <button class="qty-btn" onclick="updateLocalQty(${idx}, -1)">−</button>
+                <span class="qty-display" id="qty-${idx}">${t.quantity}</span>
+                <button class="qty-btn" onclick="updateLocalQty(${idx}, 1)">+</button>
+            </div>
+          </td>
+          <td style="text-align:right;">
+            <div class="action-btns display-val">
+              <button class="btn-edit" onclick="enterEditMode(${idx})">แก้ไข 📝</button>
+              <button class="btn-cancel" onclick="deleteTicket(${idx})">ยกเลิก ✕</button>
+            </div>
+            <div class="action-btns edit-ctrls">
+              <button class="btn-confirm" onclick="saveEdit(${idx})">ยืนยัน</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function enterEditMode(idx) {
+      document.getElementById(`row-${idx}`).className = 'edit-mode';
+    }
+
+    function updateLocalQty(idx, delta) {
+      const qtyEl = document.getElementById(`qty-${idx}`);
+      let current = parseInt(qtyEl.textContent);
+      current = Math.max(1, current + delta);
+      qtyEl.textContent = current;
+    }
+
+    function saveEdit(idx) {
+      const newQty = parseInt(document.getElementById(`qty-${idx}`).textContent);
+      const ticket = historyTable[idx];
+      
+      // Update in data store (mock)
+      const uHistory = getTicketHistory(ticket.userId);
+      const target = uHistory.find(h => h.id === ticket.id);
+      if (target) {
+        target.quantity = newQty;
+        // In real app, save to localStorage/DB
+      }
+
+      document.getElementById(`row-${idx}`).className = 'display-mode';
+      renderTickets();
+    }
+
+    function deleteTicket(idx) {
+      if (confirm('คุณแน่ใจหรือไม่ที่จะยกเลิกตั๋วนี้?')) {
+        const ticket = historyTable[idx];
+        // In mock, we just remove from local array for demo
+        historyTable.splice(idx, 1);
+        renderTickets();
+      }
+    }
+
+    renderTickets();
+  </script>
+</body>
+</html>

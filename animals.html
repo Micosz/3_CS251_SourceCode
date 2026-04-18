@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สัตว์ในสวน — สวนสัตว์เขาไม่รัก</title>
+  <meta name="description" content="สำรวจสัตว์กว่า 300 ชนิดใน 3 โซนของสวนสัตว์เขาไม่รัก">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/user.css">
+</head>
+<body>
+
+  <main class="animals-page">
+    <div class="container">
+
+      <div class="page-breadcrumb">
+        <a href="index.html">หน้าหลัก</a> <span>›</span>
+        <span>สัตว์ในสวน</span>
+      </div>
+
+      <div class="section-heading" style="margin-bottom:0.5rem;">
+        <h2>สัตว์ในสวน</h2>
+      </div>
+      <p class="section-subtitle">พบกับสัตว์มากกว่า 300 ชนิดจากทั่วโลก</p>
+
+      <!-- Zone filter tabs -->
+      <div class="zone-filter-tabs">
+        <button class="zone-tab active" data-zone="all" onclick="filterZone('all', this)">🌍 ทั้งหมด</button>
+        <button class="zone-tab" data-zone="1" onclick="filterZone(1, this)">🟠 Zone 1 — แอฟริกา</button>
+        <button class="zone-tab" data-zone="2" onclick="filterZone(2, this)">🟣 Zone 2 — เอเชีย</button>
+        <button class="zone-tab" data-zone="3" onclick="filterZone(3, this)">🟣 Zone 3 — อเมริกา</button>
+      </div>
+
+      <!-- Animals grid -->
+      <div class="animals-full-grid" id="animals-grid">
+        <!-- Injected by JS -->
+      </div>
+
+    </div>
+  </main>
+
+  <script src="js/mockData.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    initNavbar('animals');
+    initFooter();
+
+    const zoneColors = { 1: '#f97316', 2: '#ec4899', 3: '#a855f7' };
+
+    function renderAnimals(animals) {
+      const grid = document.getElementById('animals-grid');
+
+      if (animals.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1;">
+            <div class="empty-icon">🐾</div>
+            <h3>ไม่พบสัตว์ในโซนนี้</h3>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = animals.map(a => `
+        <div class="animal-card">
+          <div class="animal-card-img-wrap">
+            <img
+              class="animal-card-img"
+              src="${a.cardImage}"
+              alt="${a.nameTH}"
+              loading="lazy"
+              onerror="this.parentElement.style.background='var(--light-green)'; this.style.display='none';"
+            >
+            <div class="animal-zone-badge" style="background:${zoneColors[a.zoneId] || 'var(--primary-dark)'};">
+              📍 ${a.zone}
+            </div>
+          </div>
+          <div class="animal-card-body">
+            <div class="animal-name">${a.nameTH}</div>
+            <div class="animal-species">${a.speciesTH}</div>
+            <div style="display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap;">
+              <span class="badge badge-gray">⚥ ${a.gender}</span>
+              <span class="badge badge-gray">📦 ${a.cageCode}</span>
+            </div>
+            <a href="animal-detail.html?id=${a.id}" class="btn btn-sm" style="margin-top:0.85rem; display:inline-flex;">
+              ดูเพิ่ม →
+            </a>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterZone(zone, btn) {
+      document.querySelectorAll('.zone-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+
+      const animals = zone === 'all' ? MOCK_ANIMALS : MOCK_ANIMALS.filter(a => a.zoneId === parseInt(zone));
+      renderAnimals(animals);
+    }
+
+    // Initial render
+    renderAnimals(MOCK_ANIMALS);
+  </script>
+</body>
+</html>

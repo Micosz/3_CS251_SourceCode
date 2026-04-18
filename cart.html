@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตะกร้าสินค้า — สวนสัตว์เขาไม่รัก</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/user.css">
+</head>
+<body>
+
+  <main class="cart-page">
+    <div class="container">
+
+      <div class="page-breadcrumb">
+        <a href="index.html">หน้าหลัก</a> <span>›</span>
+        <a href="tickets.html">ซื้อบัตร</a> <span>›</span>
+        <span>ตะกร้าสินค้า</span>
+      </div>
+
+      <div class="section-heading" style="margin-bottom:2rem;">
+        <h2>ตะกร้าสินค้า</h2>
+      </div>
+
+      <!-- Empty state -->
+      <div class="cart-empty-state" id="cart-empty" style="display:none;">
+        <div class="empty-icon">🛒</div>
+        <h3>ตะกร้าว่างเปล่า</h3>
+        <p>คุณยังไม่ได้เพิ่มบัตรเข้าชมลงในตะกร้า</p>
+        <a href="tickets.html" class="btn btn-primary btn-lg">🎟️ ไปซื้อบัตร</a>
+      </div>
+
+      <!-- Cart content -->
+      <div id="cart-content" class="cart-layout">
+
+        <!-- Left: Cart items -->
+        <div>
+          <div style="background:white; border-radius:var(--radius-lg); box-shadow:var(--shadow); border:1px solid var(--gray-100);">
+            <div style="padding:1.25rem 1.5rem; border-bottom:1px solid var(--gray-200);">
+              <h4>รายการบัตร</h4>
+            </div>
+            <div style="padding:0 1.5rem;" id="cart-items">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- Promo code -->
+          <div class="promo-section" style="margin-top:1.25rem;">
+            <div class="promo-label">🏷️ รหัสส่วนลด</div>
+            <div class="promo-input-row">
+              <input
+                type="text"
+                class="form-control"
+                id="promo-input"
+                placeholder="กรอกรหัสส่วนลด (เช่น 3SALE)"
+                maxlength="20"
+              >
+              <button class="btn btn-secondary" id="promo-btn" onclick="applyPromoCode()">ใช้โค้ด</button>
+            </div>
+            <div id="promo-msg" style="margin-top:0.5rem; font-size:0.85rem; display:none;"></div>
+            <div class="promo-applied" id="promo-applied" style="display:none;">
+              <span>✅</span>
+              <span id="promo-applied-text"></span>
+              <button onclick="removePromoCode()" style="color:var(--danger); font-size:1rem; margin-left:auto;" title="ลบส่วนลด">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Summary -->
+        <div class="cart-summary">
+          <div class="cart-summary-title">สรุปรายการ</div>
+          <div id="summary-rows">
+            <!-- Injected by JS -->
+          </div>
+          <div class="divider"></div>
+          <div class="summary-row total">
+            <span>ยอดรวม</span>
+            <span id="total-amount">฿0</span>
+          </div>
+          <a href="payment.html" class="btn btn-primary btn-block btn-lg" style="margin-top:1.25rem;" id="checkout-btn">
+            ชำระเงิน →
+          </a>
+          <a href="tickets.html" class="btn btn-ghost btn-block" style="margin-top:0.5rem; font-size:0.85rem;">
+            ← เพิ่มบัตรเพิ่มเติม
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <script src="js/mockData.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    initNavbar('');
+    initFooter();
+    initToaster();
+
+    function renderCart() {
+      const items = CART.getItems();
+      const isEmpty = CART.isEmpty();
+
+      document.getElementById('cart-empty').style.display   = isEmpty ? 'block' : 'none';
+      document.getElementById('cart-content').style.display = isEmpty ? 'none'  : 'grid';
+      if (isEmpty) return;
+
+      // Render items
+      const container = document.getElementById('cart-items');
+      container.innerHTML = items.map(item => `
+        <div class="cart-item" data-id="${item.id}">
+          <div class="cart-item-icon">${item.icon}</div>
+          <div class="cart-item-info">
+            <div class="cart-item-name">${item.nameTH}</div>
+            <div class="cart-item-unit">${item.isFree ? 'ฟรี' : `฿${item.price} × ${item.qty}`}</div>
+          </div>
+          <div class="cart-item-qty">
+            <button class="qty-btn" onclick="updateItemQty('${item.id}', ${item.qty - 1})" ${item.qty <= 1 ? 'disabled':''}>−</button>
+            <span class="qty-display">${item.qty}</span>
+            <button class="qty-btn" onclick="updateItemQty('${item.id}', ${item.qty + 1})">+</button>
+          </div>
+          <div class="cart-item-subtotal">
+            ${item.isFree ? 'ฟรี' : `฿${(item.price * item.qty).toLocaleString()}`}
+          </div>
+          <button class="cart-remove-btn" onclick="removeItem('${item.id}')" title="ลบออก">🗑️</button>
+        </div>
+      `).join('');
+
+      // Render summary
+      const summaryEl = document.getElementById('summary-rows');
+      const promo = CART.getPromo();
+      const discount = CART.getDiscount();
+      let summaryHTML = items.map(i => `
+        <div class="summary-row">
+          <span>${i.type} ×${i.qty}</span>
+          <span>${i.isFree ? 'ฟรี' : `฿${(i.price * i.qty).toLocaleString()}`}</span>
+        </div>
+      `).join('');
+
+      if (discount > 0) {
+        summaryHTML += `
+          <div class="summary-row discount">
+            <span style="font-size:0.82rem;">ส่วนลด: ${promo.code}</span>
+            <span>−฿${discount}</span>
+          </div>
+        `;
+      }
+      summaryEl.innerHTML = summaryHTML;
+      document.getElementById('total-amount').textContent = `฿${CART.getTotal().toLocaleString()}`;
+
+      // Show/hide promo applied
+      if (promo) {
+        document.getElementById('promo-applied').style.display = 'flex';
+        document.getElementById('promo-applied-text').textContent = `${promo.code}: ลด ฿${promo.discountAmount}`;
+        document.getElementById('promo-input').value = promo.code;
+        document.getElementById('promo-msg').style.display = 'none';
+      } else {
+        document.getElementById('promo-applied').style.display = 'none';
+        document.getElementById('promo-input').value = '';
+      }
+    }
+
+    function updateItemQty(id, newQty) {
+      if (newQty <= 0) {
+        CART.removeItem(id);
+      } else {
+        CART.setQty(id, newQty);
+      }
+      renderCart();
+    }
+
+    function removeItem(id) {
+      CART.removeItem(id);
+      showToast('ลบรายการออกจากตะกร้าแล้ว', 'info');
+      renderCart();
+    }
+
+    function applyPromoCode() {
+      const code = document.getElementById('promo-input').value.trim();
+      if (!code) return;
+      const msgEl = document.getElementById('promo-msg');
+      const result = CART.applyPromo(code);
+      msgEl.style.display = 'block';
+      if (result.valid) {
+        msgEl.style.color = 'var(--primary)';
+        msgEl.textContent = `✅ ${result.message} (ลด ฿${result.discountAmount})`;
+        showToast('ใช้รหัสส่วนลดสำเร็จ!', 'success');
+      } else {
+        msgEl.style.color = 'var(--danger)';
+        msgEl.textContent = `❌ ${result.message}`;
+      }
+      renderCart();
+    }
+
+    function removePromoCode() {
+      CART.removePromo();
+      document.getElementById('promo-msg').style.display = 'none';
+      showToast('ลบรหัสส่วนลดแล้ว', 'info');
+      renderCart();
+    }
+
+    // Allow Enter key on promo input
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('promo-input')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') applyPromoCode();
+      });
+    });
+
+    renderCart();
+  </script>
+</body>
+</html>

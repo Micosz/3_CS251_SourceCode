@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายละเอียดบัตร — สวนสัตว์เขาไม่รัก</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    body {
+      background: #f4f6f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 2rem;
+    }
+
+    /* ── TICKET CARD ── */
+    .ticket-container {
+      width: 100%;
+      max-width: 700px;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+      position: relative;
+    }
+
+    /* Left Green Bar */
+    .ticket-sidebar {
+      width: 70px;
+      background: #025902; /* Deep green */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 0;
+    }
+    .ticket-type-vert {
+      color: white;
+      text-transform: uppercase;
+      font-weight: 700;
+      font-size: 1.4rem;
+      letter-spacing: 0.05em;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      white-space: nowrap;
+    }
+
+    /* Main Content */
+    .ticket-main {
+      flex: 1;
+      padding: 2.5rem 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2rem;
+    }
+
+    .ticket-row {
+      display: flex;
+      gap: 2.5rem;
+    }
+
+    .info-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .info-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #333;
+    }
+    .info-box {
+      background: #e9eef2;
+      padding: 0.75rem 1.25rem;
+      border-radius: 4px;
+      font-size: 1.1rem;
+      color: #1a1a1a;
+      min-width: 140px;
+      text-align: center;
+    }
+    .info-box.large {
+      font-size: 1.6rem;
+      padding: 1rem 2rem;
+      min-width: 300px;
+      text-align: left;
+    }
+
+    /* Expiry specific */
+    .expiry-wrap {
+      margin-top: 0.5rem;
+    }
+
+    /* Dashed Divider */
+    .ticket-divider {
+      width: 0;
+      border-left: 6px dotted #cbd5e0;
+      margin: 2rem 0;
+    }
+
+    /* Right Section (QR) */
+    .ticket-qr-section {
+      width: 240px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 2rem;
+      background: #f8fafc;
+    }
+
+    .qr-scan-hint {
+      font-size: 0.82rem;
+      color: #4a5568;
+      font-family: 'Courier New', Courier, monospace;
+      margin-bottom: 1rem;
+      letter-spacing: 0.1em;
+    }
+
+    .qr-container {
+      padding: 10px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+    }
+    .qr-image {
+      width: 150px;
+      height: 150px;
+      display: block;
+    }
+
+    .ticket-id {
+      margin-top: 1.25rem;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #4a5568;
+    }
+
+    /* Back Button */
+    .back-btn {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: white;
+      border: 1px solid #ddd;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      text-decoration: none;
+      color: #666;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+    .back-btn:hover { background: #f5f5f5; color: #333; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .ticket-container {
+        flex-direction: column;
+        max-width: 400px;
+      }
+      .ticket-sidebar {
+        width: 100%;
+        height: 60px;
+        padding: 0;
+      }
+      .ticket-type-vert {
+        writing-mode: horizontal-tb;
+        transform: rotate(0);
+        font-size: 1.1rem;
+      }
+      .ticket-divider {
+        width: 100%;
+        height: 0;
+        border-left: none;
+        border-top: 6px dotted #cbd5e0;
+        margin: 0;
+      }
+      .ticket-main {
+        padding: 1.5rem;
+      }
+      .ticket-qr-section {
+        width: 100%;
+        padding: 1.5rem;
+      }
+      .info-box.large {
+        min-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ticket-container" id="ticket-card">
+    <a href="ticket-history.html" class="back-btn">← กลับ</a>
+    
+    <div class="ticket-sidebar">
+      <div class="ticket-type-vert" id="ticket-type">บัตรเข้าชมราคาผู้ใหญ่</div>
+    </div>
+
+    <div class="ticket-main">
+      <div class="ticket-row">
+        <div class="info-group">
+          <div class="info-label">ชื่อ</div>
+          <div class="info-box" id="user-name">...</div>
+        </div>
+        <div class="info-group">
+          <div class="info-label">วันที่ซื้อ</div>
+          <div class="info-box" id="purchase-date">...</div>
+        </div>
+      </div>
+
+      <div class="info-group expiry-wrap">
+        <div class="info-label">วันหมดอายุ</div>
+        <div class="info-box large" id="expiry-date">...</div>
+      </div>
+    </div>
+
+    <div class="ticket-divider"></div>
+
+    <div class="ticket-qr-section">
+      <div class="qr-scan-hint">Scan to check in</div>
+      <div class="qr-container">
+        <img class="qr-image" id="qr-img" src="" alt="Ticket QR">
+      </div>
+      <div class="ticket-id" id="ticket-id">ID #000000</div>
+    </div>
+  </div>
+
+  <script src="js/mockData.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Get ticket ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tid = urlParams.get('id');
+    const user = AUTH.getUser();
+
+    if (!user) {
+      window.location.href = 'login.html';
+    } else {
+      // Find ticket in history
+      const history = getTicketHistory(user.id);
+      const ticket = history.find(t => t.id === tid);
+
+      if (ticket) {
+        document.getElementById('ticket-type').textContent = `บัตรเข้าชมราคา${ticket.type}`;
+        document.getElementById('user-name').textContent = user.firstName;
+        
+        const pDate = new Date(ticket.purchaseDate);
+        const options = { month: 'short', day: 'numeric', year: 'numeric' };
+        document.getElementById('purchase-date').textContent = pDate.toLocaleDateString('en-US', options);
+        
+        // Expiry date (1 month after purchase for mock)
+        const eDate = new Date(pDate);
+        eDate.setMonth(eDate.getMonth() + 1);
+        document.getElementById('expiry-date').textContent = eDate.toLocaleDateString('en-US', options);
+
+        document.getElementById('ticket-id').textContent = `ID #${ticket.id.slice(-6)}`;
+        
+        // QR Code
+        const qrData = `ZOO_TICKET_${ticket.id}`;
+        document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}`;
+      } else {
+        // Fallback for demo
+        document.getElementById('user-name').textContent = user.firstName;
+        document.getElementById('purchase-date').textContent = 'Feb 29, 2026';
+        document.getElementById('expiry-date').textContent = 'Mar 29, 2026';
+        document.getElementById('ticket-id').textContent = 'ID #555555';
+        document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=DEMO`;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการสิทธิ์บัญชี — Admin</title>
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body class="admin-body">
+
+  <main class="admin-main">
+    <header class="admin-header">
+      <h1 class="admin-title">จัดการสิทธิ์บัญชี</h1>
+    </header>
+
+    <div class="admin-card">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>UserID</th>
+            <th>UserName</th>
+            <th>สร้างเมื่อ</th>
+            <th>สถานะ</th>
+          </tr>
+        </thead>
+        <tbody id="user-list">
+          <!-- Injected by JS -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="../js/mockData.js"></script>
+  <script src="../js/cart.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    initAdminLayout('users');
+
+    function renderUsers() {
+      const tbody = document.getElementById('user-list');
+      const users = getAllUsers();
+
+      // Ensure some mock data if empty
+      const displayUsers = users.length > 0 ? users : [
+        { id: '111111', firstName: 'สุดต่านอั้น', lastName: '', role: 'Visitor', created: 'Feb 29, 2026' },
+        { id: '111112', firstName: 'มาหม่ำ', lastName: '', role: 'Admin', created: 'Feb 29, 2026' }
+      ];
+
+      tbody.innerHTML = displayUsers.map(u => `
+        <tr>
+          <td>#${u.id.toString().slice(-6)}</td>
+          <td>${u.firstName} ${u.lastName}</td>
+          <td>${u.created || 'Feb 29, 2026'}</td>
+          <td>
+            <select class="admin-form-control" style="width: auto; border:none; background:transparent; font-weight:500;" onchange="updateRole('${u.id}', this.value)">
+              <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
+              <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+            </select>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function updateRole(userId, newRole) {
+      if (updateUserRole(userId, newRole)) {
+        if (typeof showToast === 'function') {
+          showToast(`อัปเดตสิทธิ์ผู้ใช้เป็น ${newRole} เรียบร้อย`, 'success');
+        } else {
+          alert(`อัปเดตสิทธิ์ผู้ใช้เป็น ${newRole} เรียบร้อย`);
+        }
+      }
+    }
+
+    renderUsers();
+  </script>
+</body>
+</html>

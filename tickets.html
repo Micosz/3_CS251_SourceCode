@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ซื้อบัตรเข้าชม — สวนสัตว์เขาไม่รัก</title>
+  <meta name="description" content="ซื้อบัตรเข้าชมสวนสัตว์เขาไม่รักออนไลน์">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    body {
+      background: #fff;
+    }
+
+    .tickets-page {
+      padding: 2.5rem 0 5rem;
+    }
+
+    .tickets-intro {
+      color: var(--gray-500);
+      font-size: 0.925rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Two-column layout: cards (left) + promo image (right) */
+    .tickets-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 3rem;
+      align-items: flex-start;
+    }
+
+    /* 3 equal-width ticket cards */
+    .ticket-cards-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+    }
+
+    /* Figma-style ticket card: gray bg, rounded, vertical stack */
+    .ticket-card {
+      background: #F0F0F0;
+      border-radius: 14px;
+      padding: 1.75rem 1.25rem 1.5rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      transition: all 0.2s ease;
+    }
+
+    .ticket-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Large SVG icon at top (Figma shows outline person icon) */
+    .ticket-icon-wrap {
+      width: 90px;
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      color: var(--gray-700);
+    }
+
+    .ticket-icon-wrap svg {
+      width: 80px;
+      height: 80px;
+    }
+
+    .ticket-card-type {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--gray-800);
+      margin-bottom: 0.15rem;
+    }
+
+    .ticket-card-age {
+      font-size: 0.8rem;
+      color: var(--gray-500);
+      margin-bottom: 1rem;
+    }
+
+    .ticket-card-price {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 1.25rem;
+      line-height: 1;
+    }
+
+    .ticket-card-price.free-price {
+      color: var(--primary-light);
+    }
+
+    /* Figma "ซื้อบัตรเข้าชม" button: small bordered box at bottom */
+    .btn-buy-ticket {
+      border: 1.5px solid var(--gray-400);
+      background: transparent;
+      color: var(--gray-700);
+      padding: 0.42rem 1.1rem;
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .btn-buy-ticket:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    .btn-buy-ticket.added {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    /* Right: promo image */
+    .tickets-promo-wrap {
+      position: relative;
+    }
+
+    .tickets-promo-img {
+      width: 100%;
+      border-radius: 16px;
+      object-fit: cover;
+    }
+
+    /* Cart info bar (appears after adding) */
+    .cart-info-bar {
+      margin-top: 2rem;
+      background: var(--primary-dark);
+      color: white;
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .cart-info-bar.hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="tickets-page">
+    <div class="container">
+
+      <div class="page-breadcrumb">
+        <a href="index.html">หน้าหลัก</a>
+        <span>›</span>
+        <span>ซื้อบัตรเข้าชม</span>
+      </div>
+
+      <div class="section-heading" style="margin-bottom:0.5rem;">
+        <h2>ซื้อบัตรเข้าชมออนไลน์</h2>
+      </div>
+      <p class="tickets-intro">ซื้อบัตรเข้าชมออนไลน์ คุณสามารถใช้ส่วนลดได้</p>
+
+      <div class="tickets-layout">
+        <!-- LEFT: 3 ticket cards -->
+        <div>
+          <div class="ticket-cards-row" id="ticket-cards">
+            <!-- Injected by JS -->
+          </div>
+
+          <!-- Cart info bar -->
+          <div class="cart-info-bar hidden" id="cart-bar">
+            <div>
+              <strong>ตะกร้า:</strong>
+              <span id="cart-bar-text" style="margin-left:0.5rem;"></span>
+            </div>
+            <a href="cart.html" class="btn btn-primary" style="padding:0.5rem 1.25rem;">ดูตะกร้า →</a>
+          </div>
+        </div>
+
+        <!-- RIGHT: Promo illustration -->
+        <div class="tickets-promo-wrap">
+          <img class="tickets-promo-img" src="images/SafariZooRun-2016 1.png" alt="โปรโมชั่น Safari Zoo Run"
+            onerror="this.src='https://placehold.co/380x500/D8F3DC/1B4332?text=🏃‍♂️💨'">
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Ticket icons are now images from mockData -->
+
+  <script src="js/mockData.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    initNavbar('tickets');
+    initFooter();
+    initToaster();
+
+    function renderTicketCards() {
+      const container = document.getElementById('ticket-cards');
+      container.innerHTML = TICKET_TYPES.map(t => {
+        const qty = CART.getQty(t.id);
+        const isAdded = qty > 0;
+        return `
+          <div class="ticket-card" id="card-${t.id}">
+            <div class="ticket-icon-wrap" style="width: 100px; height: 100px; margin-bottom: 0.5rem;">
+              <img src="${t.image}" alt="${t.type}" style="width: 100%; height: 100%; object-fit: contain;">
+            </div>
+            <div class="ticket-card-type">${t.type}</div>
+            <div class="ticket-card-age">${t.ageRange}</div>
+            <div class="ticket-card-price ${t.isFree ? 'free-price' : ''}">
+              ${t.isFree ? 'ฟรี' : `฿${t.price.toFixed(2)}`}
+            </div>
+            <button
+              class="btn-buy-ticket ${isAdded ? 'added' : ''}"
+              onclick="addToCart('${t.id}')"
+            >
+              ${isAdded ? `✓ เพิ่มแล้ว (${qty})` : 'ซื้อบัตรเข้าชม'}
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      updateCartBar();
+    }
+
+    function addToCart(ticketId) {
+      const user = AUTH.getUser();
+      if (!user) {
+        showToast('กรุณาล็อกอินก่อนซื้อบัตร', 'error');
+        setTimeout(() => window.location.href = 'login.html', 1200);
+        return;
+      }
+      const ticket = TICKET_TYPES.find(t => t.id === ticketId);
+      if (!ticket) return;
+      CART.addItem(ticket, 1);
+      renderTicketCards();
+      if (!ticket.isFree) showToast(`เพิ่ม ${ticket.type} ลงตะกร้าแล้ว!`, 'success');
+    }
+
+    function updateCartBar() {
+      const bar = document.getElementById('cart-bar');
+      const items = CART.getItems();
+      const count = CART.getCount();
+      if (count > 0) {
+        bar.classList.remove('hidden');
+        document.getElementById('cart-bar-text').textContent =
+          items.map(i => `${i.type} ×${i.qty}`).join(', ') + ` — ฿${CART.getSubtotal()}`;
+      } else {
+        bar.classList.add('hidden');
+      }
+    }
+
+    renderTicketCards();
+  </script>
+</body>
+
+</html>

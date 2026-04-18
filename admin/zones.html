@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการข้อมูลสัตว์ — Admin</title>
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body class="admin-body">
+
+  <main class="admin-main">
+    <header class="admin-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <h1 class="admin-title">จัดการข้อมูลสัตว์</h1>
+      <a href="animal-add.html" class="btn-edit" style="text-decoration:none; padding: 0.5rem 1rem;">
+        เพิ่มข้อมูลสัตว์ <span style="font-size:1.2rem; font-weight:bold;">⊕</span>
+      </a>
+    </header>
+
+    <div class="admin-card">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>หมายเลขโซน</th>
+            <th>ชื่อโซน</th>
+            <th style="text-align:right;">การจัดการ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>#000001</td>
+            <td>ZONE 1</td>
+            <td style="text-align:right;">
+              <a href="zone-detail.html?id=1" class="btn-confirm" style="text-decoration:none; background:#C1E1C1; color:#1a2e1a;">ดูรายละเอียด</a>
+            </td>
+          </tr>
+          <tr>
+            <td>#000002</td>
+            <td>ZONE 2</td>
+            <td style="text-align:right;">
+              <a href="zone-detail.html?id=2" class="btn-confirm" style="text-decoration:none; background:#C1E1C1; color:#1a2e1a;">ดูรายละเอียด</a>
+            </td>
+          </tr>
+          <tr>
+            <td>#000003</td>
+            <td>ZONE 3</td>
+            <td style="text-align:right;">
+              <a href="zone-detail.html?id=3" class="btn-confirm" style="text-decoration:none; background:#C1E1C1; color:#1a2e1a;">ดูรายละเอียด</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="../js/mockData.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    initAdminLayout('animals');
+  </script>
+</body>
+</html>

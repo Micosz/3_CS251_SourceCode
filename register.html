@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สมัครสมาชิก — สวนสัตว์เขาไม่รัก</title>
+  <meta name="description" content="สมัครสมาชิกฟรีเพื่อซื้อบัตรออนไลน์และรับสิทธิพิเศษ">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body class="auth-page">
+
+  <!-- Background -->
+  <div class="auth-bg">
+    <img src="images/ZOOSignUpBG.png" alt="Zoo background" class="bg-static-img">
+  </div>
+
+  <!-- Auth Wrapper (centered for register) -->
+  <div class="auth-wrapper register-wrapper">
+    <div class="auth-card register-card">
+
+      <h1 class="auth-title">Sign-in</h1>
+      <p class="auth-subtitle"></p>
+
+      <!-- Error msg -->
+      <div class="auth-error" id="register-error"></div>
+
+      <!-- Form -->
+      <form class="auth-form" id="register-form" novalidate>
+
+        <div class="form-group">
+          <label class="form-label" for="reg-email">Email</label>
+          <input type="email" class="form-control" id="reg-email" placeholder="username@gmail.com" required>
+          <div class="form-error" id="reg-email-error">กรุณากรอกอีเมลที่ถูกต้อง</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reg-password">Password</label>
+          <div class="input-group">
+            <input type="password" class="form-control" id="reg-password" placeholder="Password" required>
+            <span class="input-icon-right" data-pw-toggle="reg-password">🙈</span>
+          </div>
+          <div class="form-error" id="reg-password-error">รห้สผ่านต้องมีอย่างน้อย 6 ตัวอักษร</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirm-password">Confirm-Password</label>
+          <div class="input-group">
+            <input type="password" class="form-control" id="confirm-password" placeholder="Password" required>
+            <span class="input-icon-right" data-pw-toggle="confirm-password">🙈</span>
+          </div>
+          <div class="form-error" id="confirm-error">รหัสผ่านไม่ตรงกัน</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="register-btn" style="background:#004b00; border-color:#004b00;">
+          Sign in
+        </button>
+
+      </form>
+
+      <p class="auth-register-link">
+        มีบัญชีอยู่แล้ว?
+        <a href="login.html">ล็อกอิน</a>
+      </p>
+
+    </div>
+  </div>
+
+  <script src="js/mockData.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Redirect if logged in
+    (function() {
+      const user = AUTH.getUser();
+      if (user) window.location.href = user.role === 'admin' ? 'admin/users.html' : 'index.html';
+    })();
+
+    initPasswordToggles();
+
+    // Password strength meter
+    document.getElementById('reg-password').addEventListener('input', function() {
+      const val = this.value;
+      const bars = [document.getElementById('bar1'), document.getElementById('bar2'), document.getElementById('bar3')];
+      const label = document.getElementById('strength-label');
+      let strength = 0;
+      if (val.length >= 6) strength++;
+      if (/[A-Z]/.test(val) && /[0-9]/.test(val)) strength++;
+      if (val.length >= 10) strength++;
+
+      bars.forEach((b, i) => {
+        b.className = 'strength-bar';
+        if (i < strength) {
+          b.classList.add(strength === 1 ? 'active-weak' : strength === 2 ? 'active-medium' : 'active-strong');
+        }
+      });
+
+      if (!val) { label.textContent = ''; label.className = 'strength-label'; return; }
+      const levels = ['', 'อ่อน', 'ปานกลาง', 'แข็งแรง'];
+      const classes = ['', 'weak', 'medium', 'strong'];
+      label.textContent = levels[strength] || levels[1];
+      label.className = 'strength-label ' + (classes[strength] || 'weak');
+    });
+
+    // Form submit
+    document.getElementById('register-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      clearErrors();
+
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName  = document.getElementById('lastName').value.trim();
+      const dob       = document.getElementById('dob').value;
+      const phone     = document.getElementById('phone').value.trim();
+      const email     = document.getElementById('reg-email').value.trim();
+      const password  = document.getElementById('reg-password').value;
+      const confirm   = document.getElementById('confirm-password').value;
+      let valid = true;
+
+      if (!firstName) { showFieldError('firstName-error'); valid = false; }
+      if (!lastName)  { showFieldError('lastName-error');  valid = false; }
+      if (!dob)       { showFieldError('dob-error');       valid = false; }
+      if (!phone || !/^\d{9,10}$/.test(phone.replace(/-/g,''))) { showFieldError('phone-error'); valid = false; }
+      if (!email || !/^\S+@\S+\.\S+$/.test(email)) { showFieldError('reg-email-error'); valid = false; }
+      if (!password || password.length < 6) { showFieldError('reg-password-error'); valid = false; }
+      if (password !== confirm) { showFieldError('confirm-error'); valid = false; }
+      if (!valid) return;
+
+      const btn = document.getElementById('register-btn');
+      btn.disabled = true;
+      btn.textContent = '⏳ กำลังสมัครสมาชิก...';
+
+      setTimeout(() => {
+        const result = AUTH.register({ firstName, lastName, dob, phone, email, password });
+        if (result.success) {
+          window.location.href = 'index.html';
+        } else {
+          showAuthError(result.message);
+          btn.disabled = false;
+          btn.textContent = 'Sign in';
+        }
+      }, 700);
+    });
+
+    function showFieldError(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('show');
+    }
+    function clearErrors() {
+      document.querySelectorAll('.form-error').forEach(e => e.classList.remove('show'));
+      document.getElementById('register-error').classList.remove('show');
+    }
+    function showAuthError(msg) {
+      const el = document.getElementById('register-error');
+      el.textContent = '⚠️ ' + msg;
+      el.classList.add('show');
+    }
+  </script>
+</body>
+</html>

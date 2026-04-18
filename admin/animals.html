@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการข้อมูลสัตว์ — Admin</title>
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body class="admin-body">
+
+  <main class="admin-main">
+    <header class="admin-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <h1 class="admin-title">จัดการข้อมูลสัตว์</h1>
+      <a href="animal-add.html" class="btn-confirm" style="text-decoration:none; display:flex; align-items:center; gap:0.5rem; height:fit-content;">
+        + เพิ่มข้อมูลสัตว์
+      </a>
+    </header>
+
+    <div class="admin-card">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>รูปภาพ</th>
+            <th>ชื่อ</th>
+            <th>สายพันธุ์</th>
+            <th>โซน</th>
+            <th>สถานะ</th>
+            <th style="text-align:right;">การจัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="animal-list">
+          <!-- Injected by JS -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="../js/mockData.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    initAdminLayout('animals');
+
+    function renderAnimals() {
+      const tbody = document.getElementById('animal-list');
+      const animals = ANIMALS; // From mockData.js
+
+      tbody.innerHTML = animals.map(a => `
+        <tr>
+          <td>
+            <img src="${a.image}" style="width:50px; height:50px; object-fit:cover; border-radius:8px; border:1px solid var(--admin-border);">
+          </td>
+          <td style="font-weight:600;">${a.name}</td>
+          <td>${a.species}</td>
+          <td>${a.zoneId}</td>
+          <td><span style="color:#2d6a4f; font-weight:600;">ปกติ</span></td>
+          <td style="text-align:right;">
+            <div class="action-btns">
+              <button class="btn-edit" onclick="alert('Coming soon')">แก้ไข 📝</button>
+              <button class="btn-cancel" onclick="alert('Coming soon')">ลบ ✕</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    renderAnimals();
+  </script>
+</body>
+</html>
