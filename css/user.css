@@ -1067,18 +1067,27 @@
   display: flex;
   gap: 0.65rem;
   margin-bottom: 2rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  align-items: center;
+  padding-bottom: 0.25rem;
 }
 .zone-tab {
-  padding: 0.5rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1rem;
   border-radius: var(--radius-full);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 700;
   border: 2px solid var(--gray-300);
   color: var(--gray-600);
   background: white;
   transition: var(--transition);
   cursor: pointer;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .zone-tab:hover { border-color: var(--primary); color: var(--primary); }
 .zone-tab.active {
@@ -1086,6 +1095,16 @@
   color: white;
   border-color: var(--primary);
 }
+
+/* per-zone active colors */
+.zone-tab[data-zone="1"].active { background: #f97316; border-color: #f97316; color: white; }
+.zone-tab[data-zone="2"].active { background: #ec4899; border-color: #ec4899; color: white; }
+.zone-tab[data-zone="3"].active { background: #a855f7; border-color: #a855f7; color: white; }
+
+/* hide small square when tab is filled with zone color */
+.zone-tab[data-zone="1"].active .zone-color,
+.zone-tab[data-zone="2"].active .zone-color,
+.zone-tab[data-zone="3"].active .zone-color { display: none; }
 
 .animals-full-grid {
   display: grid;
