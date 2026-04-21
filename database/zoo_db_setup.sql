@@ -1,3 +1,5 @@
+CREATE DATABASE IF NOT EXISTS zoo_management_db;
+
 -- ตั้งค่าฐานข้อมูลให้รองรับภาษาไทยได้อย่างสมบูรณ์
 ALTER DATABASE zoo_management_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE zoo_management_db;
