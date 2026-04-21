@@ -28,6 +28,34 @@
       <!-- Form -->
       <form class="auth-form" id="register-form" novalidate>
 
+        <!-- ชื่อ + นามสกุล -->
+        <div style="display:flex; gap:1rem;">
+          <div class="form-group" style="flex:1;">
+            <label class="form-label" for="firstName">ชื่อ</label>
+            <input type="text" class="form-control" id="firstName" placeholder="ชื่อจริง" required>
+            <div class="form-error" id="firstName-error">กรุณากรอกชื่อ</div>
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label class="form-label" for="lastName">นามสกุล</label>
+            <input type="text" class="form-control" id="lastName" placeholder="นามสกุล" required>
+            <div class="form-error" id="lastName-error">กรุณากรอกนามสกุล</div>
+          </div>
+        </div>
+
+        <!-- วันเกิด -->
+        <div class="form-group">
+          <label class="form-label" for="dob">วันเกิด</label>
+          <input type="date" class="form-control" id="dob">
+          <div class="form-error" id="dob-error">กรุณาเลือกวันเกิด</div>
+        </div>
+
+        <!-- เบอร์โทร -->
+        <div class="form-group">
+          <label class="form-label" for="phone">เบอร์โทรศัพท์</label>
+          <input type="tel" class="form-control" id="phone" placeholder="0812345678">
+          <div class="form-error" id="phone-error">กรุณากรอกเบอร์โทร 9-10 หลัก</div>
+        </div>
+
         <div class="form-group">
           <label class="form-label" for="reg-email">Email</label>
           <input type="email" class="form-control" id="reg-email" placeholder="username@gmail.com" required>
@@ -40,7 +68,14 @@
             <input type="password" class="form-control" id="reg-password" placeholder="Password" required>
             <span class="input-icon-right" data-pw-toggle="reg-password">🙈</span>
           </div>
-          <div class="form-error" id="reg-password-error">รห้สผ่านต้องมีอย่างน้อย 6 ตัวอักษร</div>
+          <!-- Password strength meter -->
+          <div class="password-strength" style="display:flex; gap:4px; margin-top:6px;">
+            <div class="strength-bar" id="bar1" style="height:4px; flex:1; border-radius:2px; background:#e0e0e0; transition:background .3s;"></div>
+            <div class="strength-bar" id="bar2" style="height:4px; flex:1; border-radius:2px; background:#e0e0e0; transition:background .3s;"></div>
+            <div class="strength-bar" id="bar3" style="height:4px; flex:1; border-radius:2px; background:#e0e0e0; transition:background .3s;"></div>
+          </div>
+          <div class="strength-label" id="strength-label" style="font-size:.75rem; margin-top:2px;"></div>
+          <div class="form-error" id="reg-password-error">รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</div>
         </div>
 
         <div class="form-group">
@@ -129,8 +164,7 @@
       btn.disabled = true;
       btn.textContent = '⏳ กำลังสมัครสมาชิก...';
 
-      setTimeout(() => {
-        const result = AUTH.register({ firstName, lastName, dob, phone, email, password });
+      AUTH.register({ firstName, lastName, dob, phone, email, password }).then(result => {
         if (result.success) {
           window.location.href = 'index.html';
         } else {
@@ -138,7 +172,7 @@
           btn.disabled = false;
           btn.textContent = 'Sign in';
         }
-      }, 700);
+      });
     });
 
     function showFieldError(id) {
