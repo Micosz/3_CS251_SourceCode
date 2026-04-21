@@ -4,11 +4,9 @@
    ============================================================ */
 
 const SESSION_KEY = 'zoo_session';
+const API_BASE = 'http://localhost:3000/api';
 
 const AUTH = {
-  /**
-   * Get current logged-in user from localStorage
-   */
   getUser() {
     try {
       const data = localStorage.getItem(SESSION_KEY);
@@ -18,52 +16,40 @@ const AUTH = {
     }
   },
 
-  /**
-   * Login with email and password
-   * Returns { success, user, message }
-   */
-  login(email, password) {
-    const user = findUser(email.trim().toLowerCase(), password);
-    if (!user) {
-      return { success: false, message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' };
+  async login(email, password) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password })
+      });
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(data.user));
+      }
+      return data;
+    } catch (err) {
+      console.error('Login error:', err);
+      return { success: false, message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่า server กำลังทำงานอยู่' };
     }
-    if (user.status !== 'active') {
-      return { success: false, message: 'บัญชีนี้ถูกระงับการใช้งาน' };
-    }
-    const session = {
-      id: user.id,
-      name: user.name,
-      firstName: user.firstName,
-      email: user.email,
-      role: user.role,
-      loginAt: new Date().toISOString()
-    };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    return { success: true, user: session };
   },
 
-  /**
-   * Register new account
-   * Returns { success, user, message }
-   */
-  register(data) {
-    if (findUserByEmail(data.email.trim().toLowerCase())) {
-      return { success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว' };
+  async register(data) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...data, email: data.email.trim().toLowerCase() })
+      });
+      const result = await res.json();
+      if (result.success) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(result.user));
+      }
+      return result;
+    } catch (err) {
+      console.error('Register error:', err);
+      return { success: false, message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่า server กำลังทำงานอยู่' };
     }
-    const newUser = registerUser({
-      ...data,
-      email: data.email.trim().toLowerCase()
-    });
-    const session = {
-      id: newUser.id,
-      name: newUser.name,
-      firstName: newUser.firstName,
-      email: newUser.email,
-      role: newUser.role,
-      loginAt: new Date().toISOString()
-    };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    return { success: true, user: session };
   },
 
   /**
