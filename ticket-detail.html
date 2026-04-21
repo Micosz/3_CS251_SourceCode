@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="css/main.css">
   <style>
     body {
-      background: #f4f6f9;
+      background: #D1D5DB;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -144,10 +144,10 @@
     .back-btn {
       position: absolute;
       top: 1.5rem;
-      right: 1.5rem;
+      left: 1.5rem;
       background: white;
       border: 1px solid #ddd;
-      padding: 0.4rem 0.8rem;
+      padding: 0.8rem 1.6rem;
       border-radius: 6px;
       text-decoration: none;
       color: #666;
@@ -193,9 +193,8 @@
   </style>
 </head>
 <body>
-
+      <a href="ticket-history.html" class="back-btn">← กลับ</a>
   <div class="ticket-container" id="ticket-card">
-    <a href="ticket-history.html" class="back-btn">← กลับ</a>
     
     <div class="ticket-sidebar">
       <div class="ticket-type-vert" id="ticket-type">บัตรเข้าชมราคาผู้ใหญ่</div>
@@ -224,7 +223,7 @@
     <div class="ticket-qr-section">
       <div class="qr-scan-hint">Scan to check in</div>
       <div class="qr-container">
-        <img class="qr-image" id="qr-img" src="" alt="Ticket QR">
+        <img class="qr-image" id="qr-img" src="images/ticket-qr.png" alt="Ticket QR">
       </div>
       <div class="ticket-id" id="ticket-id">ID #000000</div>
     </div>

@@ -71,7 +71,7 @@ const MOCK_ANIMALS = [
     zoneId: 1,
     zone: 'Zone 1',
     cageCode: 'PR-001',
-    nameTH: 'สิงโต',
+    nameTH: 'ตาหวาน',
     speciesTH: 'สิงโตแอฟริกา',
     speciesEN: 'African Lion',
     gender: 'ผู้',
@@ -144,8 +144,8 @@ const MOCK_ANIMALS = [
     weight: '195 กก.',
     status: 'active',
     featured: false,
-    image: 'https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=450&h=560&fit=crop',
-    cardImage: 'https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=400&h=280&fit=crop',
+    image: 'images/whitetiger.png',
+    cardImage: 'images/whitetiger.png',
     description: 'บิ๊กเป็นเสือโคร่งขาวที่หายากและสวยงาม เขามีพฤติกรรมเงียบขรึมและเป็นราชา'
   },
   {
@@ -164,8 +164,8 @@ const MOCK_ANIMALS = [
     weight: '32 กก.',
     status: 'active',
     featured: false,
-    image: 'https://images.unsplash.com/photo-1573488045700-a84ac8e1534c?w=450&h=560&fit=crop',
-    cardImage: 'https://images.unsplash.com/photo-1573488045700-a84ac8e1534c?w=400&h=280&fit=crop',
+    image: 'images/Orangutan.png',
+    cardImage: 'images/Orangutan.png',
     description: 'หมวยเป็นอุรังอุตังที่ฉลาดมาก เธอชอบเล่นของเล่นและมักทำให้ผู้ชมหัวเราะ'
   },
 
@@ -175,7 +175,7 @@ const MOCK_ANIMALS = [
     zoneId: 3,
     zone: 'Zone 3',
     cageCode: 'AM-001',
-    nameTH: 'เม่นแคระ',
+    nameTH: 'สมปอง',
     speciesTH: 'เม่นแคระ',
     speciesEN: 'African Pygmy Hedgehog',
     gender: 'เมีย',
@@ -195,7 +195,7 @@ const MOCK_ANIMALS = [
     zoneId: 3,
     zone: 'Zone 3',
     cageCode: 'AM-002',
-    nameTH: 'สาย',
+    nameTH: 'สายไหม',
     speciesTH: 'ฮิปโปโปตามัส',
     speciesEN: 'Hippopotamus',
     gender: 'เมีย',
@@ -206,8 +206,8 @@ const MOCK_ANIMALS = [
     weight: '1,500 กก.',
     status: 'active',
     featured: false,
-    image: 'https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?w=450&h=560&fit=crop',
-    cardImage: 'https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?w=400&h=280&fit=crop',
+    image: 'images/hippo.png',
+    cardImage: 'images/hippo.png',
     description: 'สายเป็นฮิปโปตัวใหญ่ใจดี เธอชอบว่ายน้ำและมักเปล่งเสียงร้องดังตอนเช้า'
   },
   {
@@ -215,7 +215,7 @@ const MOCK_ANIMALS = [
     zoneId: 3,
     zone: 'Zone 3',
     cageCode: 'AM-003',
-    nameTH: 'หมีน้อย',
+    nameTH: 'นอนน้อย',
     speciesTH: 'แพนด้ายักษ์',
     speciesEN: 'Giant Panda',
     gender: 'ผู้',
@@ -226,8 +226,8 @@ const MOCK_ANIMALS = [
     weight: '85 กก.',
     status: 'active',
     featured: false,
-    image: 'https://images.unsplash.com/photo-1564349683136-77e08dba1ef7?w=450&h=560&fit=crop',
-    cardImage: 'https://images.unsplash.com/photo-1564349683136-77e08dba1ef7?w=400&h=280&fit=crop',
+    image: 'images/panda.jpg',
+    cardImage: 'images/panda.jpg',
     description: 'หมีน้อยเป็นแพนด้าตัวน้อยที่น่ารักที่สุดในสวนสัตว์ เขาชอบกินไผ่และกลิ้งเล่น'
   }
 ];

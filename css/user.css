@@ -48,6 +48,7 @@
   z-index: 1;
   max-width: 600px;
   animation: fadeInUp 0.7s ease forwards;
+  left: -250px;
 }
 
 @keyframes fadeInUp {
