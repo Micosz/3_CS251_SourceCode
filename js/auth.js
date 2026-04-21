@@ -72,7 +72,9 @@ const AUTH = {
   logout() {
     localStorage.removeItem(SESSION_KEY);
     CART.clear();
-    window.location.href = '/login.html';
+    const isAdmin = window.location.pathname.includes('/admin/');
+    const base = isAdmin ? '../' : '';
+    window.location.href = base + 'login.html';
   },
 
   /**
