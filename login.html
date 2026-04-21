@@ -118,8 +118,7 @@
       btn.disabled = true;
       btn.textContent = '⏳ กำลังเข้าสู่ระบบ...';
 
-      setTimeout(() => {
-        const result = AUTH.login(email, password);
+      AUTH.login(email, password).then(result => {
         if (result.success) {
           const redirect = result.user.role === 'admin' ? 'admin/users.html' : 'index.html';
           window.location.href = redirect;
@@ -128,7 +127,7 @@
           btn.disabled = false;
           btn.textContent = 'Sign in';
         }
-      }, 600);
+      });
     });
 
     function showFieldError(id) {
