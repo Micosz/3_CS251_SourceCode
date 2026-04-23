@@ -5,6 +5,7 @@ const cors = require('cors');
 const authRoutes = require('./server/routes/auth'); 
 const animalRoutes = require('./server/routes/animal');
 const adminRoutes = require('./server/routes/admin');
+const enclosureRoutes = require('./server/routes/enclosure');
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(express.static(__dirname));
 app.use('/api/auth', authRoutes);
 app.use('/api/animals', animalRoutes);
 app.use('/api/admins', adminRoutes);
+app.use('/api/enclosures', enclosureRoutes);
 
 
 // ================= ROUTES =================
