@@ -11,6 +11,8 @@ const assignedRoutes = require('./server/routes/assigned_to');
 const eventRoutes = require('./server/routes/eventschedule');
 const phoneRoutes = require('./server/routes/phone');
 const promotionRoutes = require('./server/routes/promotion');
+const showRefRoutes = require('./server/routes/show_reference');
+
 
 const app = express();
 
@@ -30,6 +32,8 @@ app.use('/api/assignments', assignedRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/phones', phoneRoutes);
 app.use('/api/promotions', promotionRoutes);
+app.use('/api/show-ref', showRefRoutes);
+
 
 // ================= ROUTES =================
 
