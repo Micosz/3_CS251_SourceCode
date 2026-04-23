@@ -15,6 +15,7 @@ const showRefRoutes = require('./server/routes/show_reference');
 const speciesRoutes = require('./server/routes/species');
 const ticketRoutes = require('./server/routes/ticket');
 const visitorRoutes = require('./server/routes/visitor');
+const userRoutes = require('./server/routes/useraccount');
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/api/show-ref', showRefRoutes);
 app.use('/api/species', speciesRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/visitors', visitorRoutes);
+app.use('/api/users', userRoutes);
 
 // ================= ROUTES =================
 
