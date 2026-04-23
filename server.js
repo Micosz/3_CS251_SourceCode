@@ -6,6 +6,8 @@ const authRoutes = require('./server/routes/auth');
 const animalRoutes = require('./server/routes/animal');
 const adminRoutes = require('./server/routes/admin');
 const enclosureRoutes = require('./server/routes/enclosure');
+const zoneRoutes = require('./server/routes/zone');
+
 
 const app = express();
 
@@ -20,6 +22,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/animals', animalRoutes);
 app.use('/api/admins', adminRoutes);
 app.use('/api/enclosures', enclosureRoutes);
+app.use('/api/zones', zoneRoutes);
 
 
 // ================= ROUTES =================
