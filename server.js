@@ -2,13 +2,21 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 
+const authRoutes = require('./server/routes/auth'); 
+const animalRoutes = require('./server/routes/animal');
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// 👇 serve static จาก root project (สำคัญ)
+// serve static
 app.use(express.static(__dirname));
+
+// เชื่อม route backend
+app.use('/api/auth', authRoutes);
+app.use('/api/animals', animalRoutes);
+
 
 // ================= ROUTES =================
 

@@ -1,11 +1,13 @@
 const router  = require('express').Router();
-const bcrypt   = require('bcryptjs');
-const pool     = require('../db');
+const bcrypt  = require('bcryptjs');
+const pool    = require('../db');
 
-// POST /api/auth/login
+
+// ================= LOGIN =================
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+
     if (!email || !password) {
       return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลให้ครบ' });
     }
@@ -51,9 +53,11 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/register
+
+// ================= REGISTER =================
 router.post('/register', async (req, res) => {
   const conn = await pool.getConnection();
+
   try {
     const { firstName, lastName, dob, phone, email, password } = req.body;
 
@@ -67,6 +71,7 @@ router.post('/register', async (req, res) => {
       'SELECT UserID FROM UserAccount WHERE Username = ?',
       [normalEmail]
     );
+
     if (exists.length) {
       return res.json({ success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว' });
     }
@@ -80,6 +85,7 @@ router.post('/register', async (req, res) => {
        VALUES (?, ?, ?, ?, ?)`,
       [firstName, lastName, dob || null, phone || null, normalEmail]
     );
+
     const newVisitorID = visitorResult.insertId;
 
     const [userResult] = await conn.query(
@@ -87,6 +93,7 @@ router.post('/register', async (req, res) => {
        VALUES (?, NULL, ?, ?, 'user', 'ใช้งานอยู่')`,
       [newVisitorID, hash, normalEmail]
     );
+
     const newUserID = userResult.insertId;
 
     await conn.commit();
@@ -105,13 +112,35 @@ router.post('/register', async (req, res) => {
   } catch (err) {
     await conn.rollback();
     console.error('Register error:', err);
+
     if (err.code === 'ER_DUP_ENTRY') {
       return res.json({ success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว' });
     }
+
     res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดของระบบ' });
+
   } finally {
     conn.release();
   }
 });
+
+
+// ================= GET USERS (NEW) =================
+router.get('/users', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT UserID, Username, Role, AccountStatus, CreatedAt
+      FROM UserAccount
+      ORDER BY UserID ASC
+    `);
+
+    res.json({ success: true, data: rows });
+
+  } catch (err) {
+    console.error('Get users error:', err);
+    res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดของระบบ' });
+  }
+});
+
 
 module.exports = router;
