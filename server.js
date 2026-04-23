@@ -12,7 +12,7 @@ const eventRoutes = require('./server/routes/eventschedule');
 const phoneRoutes = require('./server/routes/phone');
 const promotionRoutes = require('./server/routes/promotion');
 const showRefRoutes = require('./server/routes/show_reference');
-
+const speciesRoutes = require('./server/routes/species');
 
 const app = express();
 
@@ -33,7 +33,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/phones', phoneRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/show-ref', showRefRoutes);
-
+app.use('/api/species', speciesRoutes);
 
 // ================= ROUTES =================
 
