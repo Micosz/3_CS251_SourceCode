@@ -10,6 +10,7 @@ const zoneRoutes = require('./server/routes/zone');
 const assignedRoutes = require('./server/routes/assigned_to');
 const eventRoutes = require('./server/routes/eventschedule');
 const phoneRoutes = require('./server/routes/phone');
+const promotionRoutes = require('./server/routes/promotion');
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use('/api/zones', zoneRoutes);
 app.use('/api/assignments', assignedRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/phones', phoneRoutes);
+app.use('/api/promotions', promotionRoutes);
 
 // ================= ROUTES =================
 
