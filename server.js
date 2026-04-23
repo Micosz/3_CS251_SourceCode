@@ -7,7 +7,7 @@ const animalRoutes = require('./server/routes/animal');
 const adminRoutes = require('./server/routes/admin');
 const enclosureRoutes = require('./server/routes/enclosure');
 const zoneRoutes = require('./server/routes/zone');
-
+const assignedRoutes = require('./server/routes/assigned_to');
 
 const app = express();
 
@@ -23,7 +23,7 @@ app.use('/api/animals', animalRoutes);
 app.use('/api/admins', adminRoutes);
 app.use('/api/enclosures', enclosureRoutes);
 app.use('/api/zones', zoneRoutes);
-
+app.use('/api/assignments', assignedRoutes);
 
 // ================= ROUTES =================
 
