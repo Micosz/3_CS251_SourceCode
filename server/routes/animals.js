@@ -158,4 +158,90 @@ router.get('/:id/similar', async (req, res) => {
   }
 });
 
+// ==================== Admin CRUD สัตว์ ====================
+
+// เพิ่มสัตว์ใหม่ ยัดๆ เข้าไป
+router.post('/', async (req, res) => {
+  try {
+    const { enclosureId, speciesId, animalName, gender, birthDate, arrivalDate, fatherId, motherId } = req.body;
+    if (!enclosureId || !speciesId || !animalName || !gender || !birthDate) {
+      return res.status(400).json({ success: false, message: 'กรอกข้อมูลไม่ครบ' });
+    }
+
+    const [result] = await pool.query(`
+      INSERT INTO Animal (EnclosureID, SpeciesID, AnimalName, Gender, BirthDate, ArrivalDate, FatherID, MotherID)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [enclosureId, speciesId, animalName, gender, birthDate, arrivalDate || new Date(), fatherId || null, motherId || null]);
+
+    res.json({ success: true, data: { AnimalID: result.insertId }, message: 'เพิ่มสัตว์สำเร็จ' });
+  } catch (err) {
+    console.error('เพิ่มสัตว์พัง:', err);
+    res.status(500).json({ success: false, message: 'ระบบมีปัญหา' });
+  }
+});
+
+// แก้ไขข้อมูลสัตว์ แตะเฉพาะข้อมูลชีววิทยา
+router.put('/:id', async (req, res) => {
+  try {
+    const { speciesId, animalName, gender, birthDate, arrivalDate, fatherId, motherId } = req.body;
+
+    const [result] = await pool.query(`
+      UPDATE Animal
+      SET SpeciesID = ?, AnimalName = ?, Gender = ?, BirthDate = ?,
+          ArrivalDate = ?, FatherID = ?, MotherID = ?
+      WHERE AnimalID = ?
+    `, [speciesId, animalName, gender, birthDate, arrivalDate, fatherId || null, motherId || null, req.params.id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'ไม่เจอสัตว์ตัวนี้' });
+    }
+    res.json({ success: true, message: 'แก้ไขสำเร็จ' });
+  } catch (err) {
+    console.error('แก้ไขสัตว์พัง:', err);
+    res.status(500).json({ success: false, message: 'ระบบมีปัญหา' });
+  }
+});
+
+// ย้ายกรง แยก function ชัดเจน
+router.put('/:id/enclosure', async (req, res) => {
+  try {
+    const { enclosureId } = req.body;
+    if (!enclosureId) return res.status(400).json({ success: false, message: 'ต้องระบุกรง' });
+
+    const [result] = await pool.query(`
+      UPDATE Animal SET EnclosureID = ? WHERE AnimalID = ?
+    `, [enclosureId, req.params.id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'ไม่เจอสัตว์ตัวนี้' });
+    }
+    res.json({ success: true, message: 'ย้ายกรงสำเร็จ' });
+  } catch (err) {
+    console.error('ย้ายกรงพัง:', err);
+    res.status(500).json({ success: false, message: 'ระบบมีปัญหา' });
+  }
+});
+
+// ลบสัตว์ Hard Delete ระวังนะ FK อาจพัง
+router.delete('/:id', async (req, res) => {
+  try {
+    const [result] = await pool.query(`
+      DELETE FROM Animal WHERE AnimalID = ?
+    `, [req.params.id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'ไม่เจอสัตว์ตัวนี้' });
+    }
+    res.json({ success: true, message: 'ลบสำเร็จ' });
+  } catch (err) {
+    console.error('ลบสัตว์พัง:', err);
+    // FK constraint พังก็บอกตรงๆ
+    if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(409).json({ success: false, message: 'ลบไม่ได้ สัตว์ตัวนี้ยังมีข้อมูลผูกอยู่' });
+    }
+    res.status(500).json({ success: false, message: 'ระบบมีปัญหา' });
+  }
+});
+
 module.exports = router;
+
