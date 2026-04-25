@@ -23,6 +23,7 @@ app.use('/api/animals', require('./routes/animals'));
 app.use('/api/zones', require('./routes/zones'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/search', require('./routes/search'));
+app.use('/api/tickets', require('./routes/tickets'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
