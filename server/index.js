@@ -24,6 +24,7 @@ app.use('/api/zones', require('./routes/zones'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/search', require('./routes/search'));
 app.use('/api/tickets', require('./routes/tickets'));
+app.use('/api/payment', require('./routes/payment'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
