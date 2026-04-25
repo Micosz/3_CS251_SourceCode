@@ -46,6 +46,7 @@
     initNavbar('animals');
     initFooter();
 
+    const API = 'http://localhost:3000/api';
     const zoneColors = { 1: '#f97316', 2: '#ec4899', 3: '#a855f7' };
 
     function renderAnimals(animals) {
@@ -66,23 +67,23 @@
           <div class="animal-card-img-wrap">
             <img
               class="animal-card-img"
-              src="${a.cardImage}"
-              alt="${a.nameTH}"
+              src="images/${a.AnimalName}.png"
+              alt="${a.AnimalName}"
               loading="lazy"
               onerror="this.parentElement.style.background='var(--light-green)'; this.style.display='none';"
             >
-            <div class="animal-zone-badge" style="background:${zoneColors[a.zoneId] || 'var(--primary-dark)'};">
-              📍 ${a.zone}
+            <div class="animal-zone-badge" style="background:${zoneColors[a.ZoneID] || 'var(--primary-dark)'};">
+              📍 ${a.ZoneName || 'ไม่มีโซน'}
             </div>
           </div>
           <div class="animal-card-body">
-            <div class="animal-name">${a.nameTH}</div>
-            <div class="animal-species">${a.speciesTH}</div>
+            <div class="animal-name">${a.AnimalName}</div>
+            <div class="animal-species">${a.SpeciesName}</div>
             <div style="display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap;">
-              <span class="badge badge-gray">⚥ ${a.gender}</span>
-              <span class="badge badge-gray">📦 ${a.cageCode}</span>
+              <span class="badge badge-gray">⚥ ${a.Gender}</span>
+              <span class="badge badge-gray">📦 ${a.EnclosureID || '-'}</span>
             </div>
-            <a href="animal-detail.html?id=${a.id}" class="btn btn-sm" style="margin-top:0.85rem; display:inline-flex;">
+            <a href="animal-detail.html?id=${a.AnimalID}" class="btn btn-sm" style="margin-top:0.85rem; display:inline-flex;">
               ดูเพิ่ม →
             </a>
           </div>
@@ -90,16 +91,40 @@
       `).join('');
     }
 
-    function filterZone(zone, btn) {
+    // ดึงข้อมูลจาก API จริง ไม่ใช้ mock แล้ว
+    async function loadAnimals() {
+      try {
+        const res = await fetch(`${API}/animals`);
+        const data = await res.json();
+        if (data.success) renderAnimals(data.data);
+      } catch (err) {
+        console.error('โหลดสัตว์ไม่ได้:', err);
+        // fallback เป็น mock ถ้า server ไม่รัน
+        renderAnimals(MOCK_ANIMALS);
+      }
+    }
+
+    async function filterZone(zone, btn) {
       document.querySelectorAll('.zone-tab').forEach(t => t.classList.remove('active'));
       btn.classList.add('active');
 
-      const animals = zone === 'all' ? MOCK_ANIMALS : MOCK_ANIMALS.filter(a => a.zoneId === parseInt(zone));
-      renderAnimals(animals);
+      if (zone === 'all') {
+        loadAnimals();
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/animals/zone/${zone}`);
+        const data = await res.json();
+        if (data.success) renderAnimals(data.data);
+      } catch (err) {
+        console.error('filter โซนไม่ได้:', err);
+        const animals = MOCK_ANIMALS.filter(a => a.zoneId === parseInt(zone));
+        renderAnimals(animals);
+      }
     }
 
-    // Initial render
-    renderAnimals(MOCK_ANIMALS);
+    loadAnimals();
   </script>
 </body>
 </html>

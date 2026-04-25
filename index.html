@@ -194,30 +194,55 @@
     initNavbar('home');
     initFooter();
 
-    // Render featured animals
-    const animals = getFeaturedAnimals();
-    // Sort to match image: Hedgehog, Lion, Rhino
-    const order = ['เม่นแคระ', 'สิงโต', 'แรด'];
-    animals.sort((a, b) => order.indexOf(a.nameTH) - order.indexOf(b.nameTH));
+    const API = 'http://localhost:3000/api';
 
-    const animalGrid = document.getElementById('featured-animals');
-    animalGrid.innerHTML = animals.map(a => `
-      <div class="animal-card">
-        <div class="animal-card-body" style="text-align: center; padding-top: 1.5rem;">
-           <div class="animal-name" style="font-size: 1.4rem; margin-bottom: 1rem;">${a.nameTH}</div>
-           <div class="animal-card-img-wrap" style="box-shadow: none; border-radius: 0; margin-bottom: 1.5rem;">
-            <img
-              class="animal-card-img"
-              src="${a.cardImage}"
-              alt="${a.nameTH}"
-              style="height: 180px; object-fit: contain; transform: none;"
-              onerror="this.src='https://placehold.co/400x280/FFFFFF/1B4332?text=${encodeURIComponent(a.speciesTH)}'"
-            >
+    // ดึง featured animals จาก API ถ้า server รันอยู่
+    async function loadFeatured() {
+      const animalGrid = document.getElementById('featured-animals');
+      try {
+        const res = await fetch(`${API}/animals/featured`);
+        const data = await res.json();
+        if (data.success && data.data.length > 0) {
+          animalGrid.innerHTML = data.data.slice(0, 3).map(a => `
+            <div class="animal-card">
+              <div class="animal-card-body" style="text-align: center; padding-top: 1.5rem;">
+                <div class="animal-name" style="font-size: 1.4rem; margin-bottom: 1rem;">${a.AnimalName}</div>
+                <div class="animal-card-img-wrap" style="box-shadow: none; border-radius: 0; margin-bottom: 1.5rem;">
+                  <img class="animal-card-img" src="images/${a.AnimalName}.png" alt="${a.AnimalName}"
+                    style="height: 180px; object-fit: contain; transform: none;"
+                    onerror="this.src='https://placehold.co/400x280/FFFFFF/1B4332?text=${encodeURIComponent(a.SpeciesName)}'"
+                  >
+                </div>
+                <a href="animal-detail.html?id=${a.AnimalID}" class="btn btn-sm">ดูเพิ่มเติม</a>
+              </div>
+            </div>
+          `).join('');
+          return;
+        }
+      } catch (err) {
+        console.error('ดึง featured จาก API ไม่ได้:', err);
+      }
+
+      // fallback ใช้ mock ถ้า API ไม่ตอบ
+      const animals = getFeaturedAnimals();
+      const order = ['เม่นแคระ', 'สิงโต', 'แรด'];
+      animals.sort((a, b) => order.indexOf(a.nameTH) - order.indexOf(b.nameTH));
+      animalGrid.innerHTML = animals.map(a => `
+        <div class="animal-card">
+          <div class="animal-card-body" style="text-align: center; padding-top: 1.5rem;">
+             <div class="animal-name" style="font-size: 1.4rem; margin-bottom: 1rem;">${a.nameTH}</div>
+             <div class="animal-card-img-wrap" style="box-shadow: none; border-radius: 0; margin-bottom: 1.5rem;">
+              <img class="animal-card-img" src="${a.cardImage}" alt="${a.nameTH}"
+                style="height: 180px; object-fit: contain; transform: none;"
+                onerror="this.src='https://placehold.co/400x280/FFFFFF/1B4332?text=${encodeURIComponent(a.speciesTH)}'"
+              >
+            </div>
+            <a href="animal-detail.html?id=${a.id}" class="btn btn-sm">ดูเพิ่มเติม</a>
           </div>
-          <a href="animal-detail.html?id=${a.id}" class="btn btn-sm">ดูเพิ่มเติม</a>
         </div>
-      </div>
-    `).join('');
+      `).join('');
+    }
+    loadFeatured();
   </script>
 </body>
 
