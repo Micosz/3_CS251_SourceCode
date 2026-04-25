@@ -21,6 +21,7 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/animals', require('./routes/animals'));
 app.use('/api/zones', require('./routes/zones'));
+app.use('/api/events', require('./routes/events'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
