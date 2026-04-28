@@ -34,14 +34,45 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM Animal WHERE AnimalID = ?',
+      `SELECT 
+        a.AnimalID,
+        a.EnclosureID,
+        a.SpeciesID,
+        a.AnimalName,
+        a.Gender,
+        DATE_FORMAT(a.BirthDate, '%Y-%m-%d') AS BirthDate,
+        DATE_FORMAT(a.ArrivalDate, '%Y-%m-%d') AS ArrivalDate,
+        a.FatherID,
+        a.MotherID,
+        s.SpeciesName,
+        s.TaxonomyCategory,
+        s.Origin,
+        s.AverageLifespan,
+        s.ScientificName,
+        s.ConservationStatus,
+        z.ZoneID,
+        z.ZoneName
+      FROM Animal a
+      LEFT JOIN Species s ON a.SpeciesID = s.SpeciesID
+      LEFT JOIN Enclosure e ON a.EnclosureID = e.EnclosureID
+      LEFT JOIN Zone z ON e.ZoneID = z.ZoneID
+      WHERE a.AnimalID = ?
+      LIMIT 1`,
       [req.params.id]
     );
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Animal not found'
+      });
+    }
 
     res.json({ success: true, data: rows[0] });
 
   } catch (err) {
-    res.status(500).json({ success: false });
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

@@ -186,7 +186,7 @@
   </section>
 
   <!-- Scripts -->
-  <script src="js/mockData.js"></script>
+  <script src="js/layout.js"></script>
   <script src="js/cart.js"></script>
   <script src="js/auth.js"></script>
   <script>
@@ -195,29 +195,135 @@
     initFooter();
 
     // Render featured animals
-    const animals = getFeaturedAnimals();
-    // Sort to match image: Hedgehog, Lion, Rhino
-    const order = ['เม่นแคระ', 'สิงโต', 'แรด'];
-    animals.sort((a, b) => order.indexOf(a.nameTH) - order.indexOf(b.nameTH));
-
     const animalGrid = document.getElementById('featured-animals');
-    animalGrid.innerHTML = animals.map(a => `
-      <div class="animal-card">
-        <div class="animal-card-body" style="text-align: center; padding-top: 1.5rem;">
-           <div class="animal-name" style="font-size: 1.4rem; margin-bottom: 1rem;">${a.nameTH}</div>
-           <div class="animal-card-img-wrap" style="box-shadow: none; border-radius: 0; margin-bottom: 1.5rem;">
-            <img
-              class="animal-card-img"
-              src="${a.cardImage}"
-              alt="${a.nameTH}"
-              style="height: 180px; object-fit: contain; transform: none;"
-              onerror="this.src='https://placehold.co/400x280/FFFFFF/1B4332?text=${encodeURIComponent(a.speciesTH)}'"
-            >
+
+    async function loadFeaturedAnimals() {
+      try {
+        const res = await fetch('/api/animals');
+        const json = await res.json();
+
+        if (!json.success) throw new Error('Load animals failed');
+
+        const animals = json.data.slice(0, 3).map(a => ({
+          id: a.AnimalID,
+          nameTH: a.AnimalName,
+          speciesTH: a.SpeciesName,
+          cardImage: `images/animals/${a.AnimalID}.png`
+        }));
+
+        renderFeaturedAnimals(animals);
+      } catch (err) {
+        console.error(err);
+        animalGrid.innerHTML = `
+          <div class="empty-state" style="grid-column:1/-1;">
+            <h3>โหลดข้อมูลสัตว์ไม่สำเร็จ</h3>
           </div>
-          <a href="animal-detail.html?id=${a.id}" class="btn btn-sm">ดูเพิ่มเติม</a>
+        `;
+      }
+    }
+
+    function renderFeaturedAnimals(animals) {
+      animalGrid.innerHTML = animals.map(a => `
+        <div class="animal-card">
+          <div class="animal-card-body" style="text-align: center; padding-top: 1.5rem;">
+            <div class="animal-name" style="font-size: 1.4rem; margin-bottom: 0.35rem;">${a.nameTH}</div>
+            <div class="animal-species" style="margin-bottom: 1rem;">${a.speciesTH || ''}</div>
+            <div class="animal-card-img-wrap" style="box-shadow: none; border-radius: 0; margin-bottom: 1.5rem;">
+              <img
+                class="animal-card-img"
+                src="${a.cardImage}"
+                alt="${a.nameTH}"
+                style="height: 180px; object-fit: contain; transform: none;"
+                onerror="this.src='images/default.png'"
+              >
+            </div>
+            <a href="animal-detail.html?id=${a.id}" class="btn btn-sm">ดูเพิ่มเติม</a>
+          </div>
         </div>
-      </div>
-    `).join('');
+      `).join('');
+    }
+
+    loadFeaturedAnimals();
+
+    // Load show schedules from EventSchedule in the database.
+    async function loadShowSchedules() {
+      try {
+        const res = await fetch('/api/events');
+        const json = await res.json();
+
+        if (!json.success) throw new Error('Load schedules failed');
+
+        const events = (json.data || []).filter(event => event.EventTime);
+        renderShowSchedules(events);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderShowSchedules(events) {
+      const greenCol = document.querySelector('.schedule-col.green');
+      const orangeCol = document.querySelector('.schedule-col.orange');
+      if (!greenCol || !orangeCol) return;
+
+      const groups = events.reduce((map, event) => {
+        const date = event.EventDate || 'no-date';
+        if (!map[date]) map[date] = [];
+        map[date].push(event);
+        return map;
+      }, {});
+
+      const dates = Object.keys(groups).sort();
+      const normalEvents = groups[dates[0]] || [];
+      const weekendEvents = groups[dates[1]] || [];
+
+      greenCol.innerHTML = `
+        <div class="schedule-header">${formatScheduleHeader(dates[0], 'รอบแสดงธรรมดา')}</div>
+        ${renderScheduleItems(normalEvents)}
+      `;
+
+      orangeCol.innerHTML = `
+        <div class="schedule-header">${formatScheduleHeader(dates[1], 'รอบแสดงวันถัดไป')}</div>
+        ${renderScheduleItems(weekendEvents)}
+      `;
+    }
+
+    function renderScheduleItems(events) {
+      if (!events.length) {
+        return `
+          <div class="schedule-item">
+            <span class="schedule-time">-</span>
+            <span class="schedule-name">ยังไม่มีรอบการแสดง</span>
+          </div>
+        `;
+      }
+
+      return events
+        .sort((a, b) => String(a.EventTime).localeCompare(String(b.EventTime)))
+        .map(event => `
+          <div class="schedule-item">
+            <span class="schedule-time">${formatEventTime(event.EventTime)} น.</span>
+            <span class="schedule-name">${event.EventName}</span>
+          </div>
+        `)
+        .join('');
+    }
+
+    function formatEventTime(time) {
+      return String(time || '').slice(0, 5);
+    }
+
+    function formatScheduleHeader(date, fallback) {
+      if (!date || date === 'no-date') return fallback;
+      const d = new Date(date + 'T00:00:00');
+      if (Number.isNaN(d.getTime())) return fallback;
+      return d.toLocaleDateString('th-TH', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'short'
+      });
+    }
+
+    loadShowSchedules();
   </script>
 </body>
 

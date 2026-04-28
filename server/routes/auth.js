@@ -1,131 +1,185 @@
-const router  = require('express').Router();
-const bcrypt  = require('bcryptjs');
-const pool    = require('../db');
+/* ============================================================
+   ZOO WEB APP - AUTH ROUTES
+   Fixes:
+   - Login uses username + plain-text password as requested.
+   - LEFT JOIN supports admin accounts that may not have a Visitor row.
+   - Always returns consistent JSON for frontend redirect/session handling.
+   ============================================================ */
 
+const router = require('express').Router();
+const pool = require('../db');
 
-// ================= LOGIN =================
+function normalizeRole(role) {
+  return String(role || 'user').trim().toLowerCase();
+}
+
+function buildSession(row) {
+  const role = normalizeRole(row.Role);
+  const firstName = row.VisitorFName || row.AdminFirstName || row.Username;
+  const lastName = row.VisitorLName || row.AdminLastName || '';
+
+  return {
+    id: row.UserID,
+    visitorId: row.VisitorID || null,
+    adminId: row.AdminID || null,
+    username: row.Username,
+    name: String(firstName + ' ' + lastName).trim(),
+    firstName: firstName,
+    email: row.VisitorEmail || row.AdminEmail || row.Username,
+    role: role,
+    loginAt: new Date().toISOString()
+  };
+}
+
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const username = String(req.body.username || '').trim();
+    const password = String(req.body.password || '');
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลให้ครบ' });
+    if (!username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter username and password.'
+      });
     }
 
     const [rows] = await pool.query(
-      `SELECT ua.UserID, ua.Password, ua.Role, ua.AccountStatus,
-              v.VisitorFName, v.VisitorLName, v.VisitorEmail
+      `SELECT
+          ua.UserID,
+          ua.VisitorID,
+          ua.AdminID,
+          ua.Username,
+          ua.Password,
+          ua.Role,
+          ua.AccountStatus,
+          v.VisitorFName,
+          v.VisitorLName,
+          v.VisitorEmail,
+          a.FirstName AS AdminFirstName,
+          a.Surname AS AdminLastName,
+          a.Email AS AdminEmail
        FROM UserAccount ua
-       JOIN Visitor v ON ua.VisitorID = v.VisitorID
-       WHERE ua.Username = ?`,
-      [email.trim().toLowerCase()]
+       LEFT JOIN Visitor v ON ua.VisitorID = v.VisitorID
+       LEFT JOIN Admin a ON ua.AdminID = a.AdminID
+       WHERE ua.Username = ?
+       LIMIT 1`,
+      [username]
     );
 
-    if (!rows.length) {
-      return res.json({ success: false, message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+    if (!rows.length || password !== String(rows[0].Password || '')) {
+      return res.status(401).json({
+        success: false,
+        message: 'Username or password is incorrect.'
+      });
     }
 
     const row = rows[0];
+    const status = String(row.AccountStatus || '');
 
-    if (row.AccountStatus === 'ถูกปิดใช้งาน') {
-      return res.json({ success: false, message: 'บัญชีนี้ถูกระงับการใช้งาน' });
+    if (status.includes('ปิด') || status.toLowerCase() === 'disabled') {
+      return res.status(403).json({
+        success: false,
+        message: 'This account is disabled.'
+      });
     }
 
-    const match = await bcrypt.compare(password, row.Password);
-    if (!match) {
-      return res.json({ success: false, message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
-    }
-
-    const session = {
-      id:        row.UserID,
-      name:      `${row.VisitorFName} ${row.VisitorLName}`,
-      firstName: row.VisitorFName,
-      email:     row.VisitorEmail,
-      role:      row.Role.toLowerCase(),
-      loginAt:   new Date().toISOString()
-    };
-
-    res.json({ success: true, user: session });
-
+    return res.json({
+      success: true,
+      user: buildSession(row)
+    });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดของระบบ' });
+    return res.status(500).json({
+      success: false,
+      message: 'System error while logging in.'
+    });
   }
 });
 
-
-// ================= REGISTER =================
 router.post('/register', async (req, res) => {
   const conn = await pool.getConnection();
 
   try {
-    const { firstName, lastName, dob, phone, email, password } = req.body;
+    const firstName = String(req.body.firstName || '').trim();
+    const lastName = String(req.body.lastName || '').trim();
+    const dob = req.body.dob || null;
+    const phone = req.body.phone || null;
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const password = String(req.body.password || '');
 
     if (!firstName || !lastName || !email || !password) {
-      return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลให้ครบ' });
+      return res.status(400).json({
+        success: false,
+        message: 'Please fill in all required fields.'
+      });
     }
 
-    const normalEmail = email.trim().toLowerCase();
-
     const [exists] = await conn.query(
-      'SELECT UserID FROM UserAccount WHERE Username = ?',
-      [normalEmail]
+      'SELECT UserID FROM UserAccount WHERE Username = ? LIMIT 1',
+      [email]
     );
 
     if (exists.length) {
-      return res.json({ success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว' });
+      return res.status(409).json({
+        success: false,
+        message: 'This email is already registered.'
+      });
     }
-
-    const hash = await bcrypt.hash(password, 12);
 
     await conn.beginTransaction();
 
     const [visitorResult] = await conn.query(
-      `INSERT INTO Visitor (VisitorFName, VisitorLName, VisitorDateOfBirth, VisitorTel, VisitorEmail)
+      `INSERT INTO Visitor
+        (VisitorFName, VisitorLName, VisitorDateOfBirth, VisitorTel, VisitorEmail)
        VALUES (?, ?, ?, ?, ?)`,
-      [firstName, lastName, dob || null, phone || null, normalEmail]
+      [firstName, lastName, dob, phone, email]
     );
 
-    const newVisitorID = visitorResult.insertId;
+    const visitorId = visitorResult.insertId;
 
     const [userResult] = await conn.query(
-      `INSERT INTO UserAccount (VisitorID, AdminID, Password, Username, Role, AccountStatus)
+      `INSERT INTO UserAccount
+        (VisitorID, AdminID, Password, Username, Role, AccountStatus)
        VALUES (?, NULL, ?, ?, 'user', 'ใช้งานอยู่')`,
-      [newVisitorID, hash, normalEmail]
+      [visitorId, password, email]
     );
-
-    const newUserID = userResult.insertId;
 
     await conn.commit();
 
-    const session = {
-      id:        newUserID,
-      name:      `${firstName} ${lastName}`,
-      firstName: firstName,
-      email:     normalEmail,
-      role:      'user',
-      loginAt:   new Date().toISOString()
-    };
-
-    res.json({ success: true, user: session });
-
+    return res.json({
+      success: true,
+      user: {
+        id: userResult.insertId,
+        visitorId: visitorId,
+        adminId: null,
+        username: email,
+        name: firstName + ' ' + lastName,
+        firstName: firstName,
+        email: email,
+        role: 'user',
+        loginAt: new Date().toISOString()
+      }
+    });
   } catch (err) {
     await conn.rollback();
     console.error('Register error:', err);
 
     if (err.code === 'ER_DUP_ENTRY') {
-      return res.json({ success: false, message: 'อีเมลนี้ถูกใช้งานแล้ว' });
+      return res.status(409).json({
+        success: false,
+        message: 'This email is already registered.'
+      });
     }
 
-    res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดของระบบ' });
-
+    return res.status(500).json({
+      success: false,
+      message: 'System error while registering.'
+    });
   } finally {
     conn.release();
   }
 });
 
-
-// ================= GET USERS (NEW) =================
 router.get('/users', async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -134,13 +188,14 @@ router.get('/users', async (req, res) => {
       ORDER BY UserID ASC
     `);
 
-    res.json({ success: true, data: rows });
-
+    return res.json({ success: true, data: rows });
   } catch (err) {
     console.error('Get users error:', err);
-    res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดของระบบ' });
+    return res.status(500).json({
+      success: false,
+      message: 'System error while loading users.'
+    });
   }
 });
-
 
 module.exports = router;

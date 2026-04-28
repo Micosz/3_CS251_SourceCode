@@ -39,67 +39,111 @@
     </div>
   </main>
 
-  <script src="js/mockData.js"></script>
+  <script src="js/layout.js"></script>
   <script src="js/cart.js"></script>
   <script src="js/auth.js"></script>
+
   <script>
-    initNavbar('animals');
-    initFooter();
+  initNavbar('animals');
+  initFooter();
 
-    const zoneColors = { 1: '#f97316', 2: '#ec4899', 3: '#a855f7' };
+  const zoneColors = { 1: '#f97316', 2: '#ec4899', 3: '#a855f7' };
 
-    function renderAnimals(animals) {
-      const grid = document.getElementById('animals-grid');
+  let ALL_ANIMALS = [];
 
-      if (animals.length === 0) {
-        grid.innerHTML = `
-          <div class="empty-state" style="grid-column:1/-1;">
-            <div class="empty-icon">🐾</div>
-            <h3>ไม่พบสัตว์ในโซนนี้</h3>
-          </div>
-        `;
-        return;
-      }
+  // ================= LOAD FROM API =================
+  async function loadAnimals() {
+    try {
+      const res = await fetch('/api/animals');
+      const json = await res.json();
 
-      grid.innerHTML = animals.map(a => `
-        <div class="animal-card">
-          <div class="animal-card-img-wrap">
-            <img
-              class="animal-card-img"
-              src="${a.cardImage}"
-              alt="${a.nameTH}"
-              loading="lazy"
-              onerror="this.parentElement.style.background='var(--light-green)'; this.style.display='none';"
-            >
-            <div class="animal-zone-badge" style="background:${zoneColors[a.zoneId] || 'var(--primary-dark)'};">
-              📍 ${a.zone}
-            </div>
-          </div>
-          <div class="animal-card-body">
-            <div class="animal-name">${a.nameTH}</div>
-            <div class="animal-species">${a.speciesTH}</div>
-            <div style="display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap;">
-              <span class="badge badge-gray">⚥ ${a.gender}</span>
-              <span class="badge badge-gray">📦 ${a.cageCode}</span>
-            </div>
-            <a href="animal-detail.html?id=${a.id}" class="btn btn-sm" style="margin-top:0.85rem; display:inline-flex;">
-              ดูเพิ่ม →
-            </a>
+      if (!json.success) throw new Error('โหลดข้อมูลไม่สำเร็จ');
+
+      // 🔥 ใช้ AnimalID เป็นชื่อรูป
+      ALL_ANIMALS = json.data.map(a => ({
+        id: a.AnimalID,
+        nameTH: a.AnimalName,
+        speciesTH: a.SpeciesName,
+        gender: a.Gender,
+        zoneId: a.ZoneID,
+        zone: a.ZoneName || 'ไม่ระบุโซน',
+        cageCode: a.EnclosureID || '-',
+        cardImage: `images/animals/${a.AnimalID}.png`
+      }));
+
+      renderAnimals(ALL_ANIMALS);
+
+    } catch (err) {
+      console.error(err);
+      document.getElementById('animals-grid').innerHTML = `
+        <div class="empty-state">
+          <h3>โหลดข้อมูลไม่สำเร็จ</h3>
+        </div>
+      `;
+    }
+  }
+
+  // ================= RENDER =================
+  function renderAnimals(animals) {
+    const grid = document.getElementById('animals-grid');
+
+    if (animals.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <div class="empty-icon">🐾</div>
+          <h3>ไม่พบสัตว์ในโซนนี้</h3>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = animals.map(a => `
+      <div class="animal-card">
+        <div class="animal-card-img-wrap">
+          <img
+            class="animal-card-img"
+            src="${a.cardImage}"
+            alt="${a.nameTH}"
+            loading="lazy"
+            onerror="this.src='images/default.png'"
+          >
+          <div class="animal-zone-badge"
+              style="background:${zoneColors[a.zoneId] || '#333'};">
+            📍 ${a.zone}
           </div>
         </div>
-      `).join('');
-    }
 
-    function filterZone(zone, btn) {
-      document.querySelectorAll('.zone-tab').forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
+        <div class="animal-card-body">
+          <div class="animal-name">${a.nameTH}</div>
+          <div class="animal-species">${a.speciesTH}</div>
 
-      const animals = zone === 'all' ? MOCK_ANIMALS : MOCK_ANIMALS.filter(a => a.zoneId === parseInt(zone));
-      renderAnimals(animals);
-    }
+          <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
+            <span class="badge badge-gray">⚥ ${a.gender}</span>
+            <span class="badge badge-gray">📦 ${a.cageCode}</span>
+          </div>
 
-    // Initial render
-    renderAnimals(MOCK_ANIMALS);
-  </script>
+          <a href="animal-detail.html?id=${a.id}" class="btn btn-sm">
+            ดูเพิ่ม →
+          </a>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ================= FILTER =================
+  function filterZone(zone, btn) {
+    document.querySelectorAll('.zone-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+
+    const filtered = zone === 'all'
+      ? ALL_ANIMALS
+      : ALL_ANIMALS.filter(a => a.zoneId === parseInt(zone));
+
+    renderAnimals(filtered);
+  }
+
+  // ================= START =================
+  loadAnimals();
+</script>
 </body>
 </html>

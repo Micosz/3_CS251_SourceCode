@@ -199,7 +199,8 @@
 
   <!-- Ticket icons are now images from mockData -->
 
-  <script src="js/mockData.js"></script>
+
+  <script src="js/layout.js"></script>
   <script src="js/cart.js"></script>
   <script src="js/auth.js"></script>
   <script>
@@ -207,24 +208,78 @@
     initFooter();
     initToaster();
 
+    let ALL_TICKETS = [];
+
+    // ================= LOAD FROM API =================
+    async function loadTickets() {
+      try {
+        const res = await fetch('/api/tickets');
+        const json = await res.json();
+
+        if (!json.success) throw new Error('โหลด ticket ไม่สำเร็จ');
+
+        // 🔥 map จาก API → UI
+        ALL_TICKETS = json.data.map((t, index) => ({
+          id: t.TicketID || index + 1,
+          type: t.TicketType,
+          price: parseFloat(t.Price) || 0,
+          isFree: parseFloat(t.Price) === 0,
+          ageRange: getAgeLabel(t.TicketType),
+          image: `images/tickets/${t.TicketType}.png`
+        }));
+
+        renderTicketCards();
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('ticket-cards').innerHTML = `
+          <div class="empty-state">
+            <h3>โหลดข้อมูลบัตรไม่สำเร็จ</h3>
+          </div>
+        `;
+      }
+    }
+
+    // ================= HELPER =================
+    function getAgeLabel(type) {
+      const ticketType = String(type || '').toLowerCase();
+
+      if (ticketType === 'adult') return 'ผู้ใหญ่ (18+)';
+      if (ticketType === 'student') return 'นักเรียน / นักศึกษา';
+      if (ticketType === 'child') return 'เด็ก (ต่ำกว่า 12 ปี)';
+      if (ticketType === 'infant') return 'ทารก (ต่ำกว่า 3 ปี)';
+      return '-';
+    }
+
+    // ================= RENDER =================
     function renderTicketCards() {
       const container = document.getElementById('ticket-cards');
-      container.innerHTML = TICKET_TYPES.map(t => {
+
+      container.innerHTML = ALL_TICKETS.map(t => {
         const qty = CART.getQty(t.id);
         const isAdded = qty > 0;
+
         return `
           <div class="ticket-card" id="card-${t.id}">
             <div class="ticket-icon-wrap" style="width: 100px; height: 100px; margin-bottom: 0.5rem;">
-              <img src="${t.image}" alt="${t.type}" style="width: 100%; height: 100%; object-fit: contain;">
+              <img 
+                src="${t.image}" 
+                alt="${t.type}" 
+                style="width: 100%; height: 100%; object-fit: contain;"
+                onerror="this.src='images/default.png'"
+              >
             </div>
+
             <div class="ticket-card-type">${t.type}</div>
             <div class="ticket-card-age">${t.ageRange}</div>
+
             <div class="ticket-card-price ${t.isFree ? 'free-price' : ''}">
               ${t.isFree ? 'ฟรี' : `฿${t.price.toFixed(2)}`}
             </div>
+
             <button
               class="btn-buy-ticket ${isAdded ? 'added' : ''}"
-              onclick="addToCart('${t.id}')"
+              onclick="addToCart(${t.id})"
             >
               ${isAdded ? `✓ เพิ่มแล้ว (${qty})` : 'ซื้อบัตรเข้าชม'}
             </button>
@@ -235,35 +290,48 @@
       updateCartBar();
     }
 
+    // ================= ADD TO CART =================
     function addToCart(ticketId) {
       const user = AUTH.getUser();
+
       if (!user) {
         showToast('กรุณาล็อกอินก่อนซื้อบัตร', 'error');
         setTimeout(() => window.location.href = 'login.html', 1200);
         return;
       }
-      const ticket = TICKET_TYPES.find(t => t.id === ticketId);
+
+      const ticket = ALL_TICKETS.find(t => t.id === ticketId);
       if (!ticket) return;
+
       CART.addItem(ticket, 1);
       renderTicketCards();
-      if (!ticket.isFree) showToast(`เพิ่ม ${ticket.type} ลงตะกร้าแล้ว!`, 'success');
+
+      if (!ticket.isFree) {
+        showToast(`เพิ่ม ${ticket.type} ลงตะกร้าแล้ว!`, 'success');
+      }
     }
 
+    // ================= CART BAR =================
     function updateCartBar() {
       const bar = document.getElementById('cart-bar');
       const items = CART.getItems();
       const count = CART.getCount();
+
       if (count > 0) {
         bar.classList.remove('hidden');
+
         document.getElementById('cart-bar-text').textContent =
-          items.map(i => `${i.type} ×${i.qty}`).join(', ') + ` — ฿${CART.getSubtotal()}`;
+          items.map(i => `${i.type} ×${i.qty}`).join(', ') +
+          ` — ฿${CART.getSubtotal()}`;
+
       } else {
         bar.classList.add('hidden');
       }
     }
 
-    renderTicketCards();
-  </script>
+    // ================= START =================
+    loadTickets();
+</script>
 </body>
 
 </html>

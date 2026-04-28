@@ -169,8 +169,9 @@ router.post('/validate', async (req, res) => {
         Conditions,
         DATE_FORMAT(PromotionExpireDate, '%Y-%m-%d %H:%i:%s') AS PromotionExpireDate
       FROM Promotion
-      WHERE PromotionCode = ?
+      WHERE UPPER(PromotionCode) = UPPER(?)
       AND PromotionExpireDate > NOW()
+      LIMIT 1
     `, [code]);
 
     if (!rows.length) {
