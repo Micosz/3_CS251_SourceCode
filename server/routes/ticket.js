@@ -8,6 +8,7 @@ router.get('/', async (req, res) => {
     const [rows] = await pool.query(`
       SELECT 
         t.TicketID,
+        t.VisitorID,
         t.TicketType,
         DATE_FORMAT(t.VisitDate, '%Y-%m-%d') AS VisitDate,
         t.Price,

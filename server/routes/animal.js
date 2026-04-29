@@ -30,6 +30,30 @@ router.get('/', async (req, res) => {
 });
 
 
+// ================= GET BY SPECIES & ENCLOSURE =================
+router.get('/species/:speciesId/enclosure/:enclosureId', async (req, res) => {
+  try {
+    const { speciesId, enclosureId } = req.params;
+
+    const [sp] = await pool.query('SELECT SpeciesName FROM Species WHERE SpeciesID = ?', [speciesId]);
+    const speciesName = sp.length ? sp[0].SpeciesName : `สายพันธุ์ #${speciesId}`;
+
+    const [rows] = await pool.query(`
+      SELECT AnimalID, AnimalName, Gender, DATE_FORMAT(BirthDate, '%Y-%m-%d') as BirthDate, EnclosureID
+      FROM Animal
+      WHERE SpeciesID = ? AND EnclosureID = ?
+      ORDER BY AnimalID ASC
+    `, [speciesId, enclosureId]);
+
+    res.json({ success: true, speciesName, data: rows });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
+  }
+});
+
+
 // ================= GET BY ID =================
 router.get('/:id', async (req, res) => {
   try {
@@ -80,16 +104,21 @@ router.get('/:id', async (req, res) => {
 // ================= CREATE =================
 router.post('/', async (req, res) => {
   try {
-    const { name, gender, speciesId, enclosureId } = req.body;
+    const { name, gender, speciesId, cageId, enclosureId, birthDate, entryDate, fatherId, motherId } = req.body;
+    const encId = enclosureId || cageId;
+    const fId = fatherId ? parseInt(fatherId) : null;
+    const mId = motherId ? parseInt(motherId) : null;
+    const arrival = entryDate ? new Date(entryDate) : new Date();
 
     const [result] = await pool.query(`
-      INSERT INTO Animal (AnimalName, Gender, SpeciesID, EnclosureID)
-      VALUES (?, ?, ?, ?)
-    `, [name, gender, speciesId, enclosureId]);
+      INSERT INTO Animal (AnimalName, Gender, SpeciesID, EnclosureID, BirthDate, ArrivalDate, FatherID, MotherID)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [name, gender, speciesId, encId, birthDate || null, arrival, fId, mId]);
 
-    res.json({ success: true, id: result.insertId });
+    res.json({ success: true, id: result.insertId, message: 'เพิ่มข้อมูลสัตว์ตัวใหม่สำเร็จ!' });
 
   } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false });
   }
 });

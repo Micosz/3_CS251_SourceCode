@@ -1,19 +1,22 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>รายละเอียดสายพันธุ์ — Admin</title>
   <link rel="stylesheet" href="../css/admin.css">
 </head>
+
 <body class="admin-body">
 
   <main class="admin-main">
-    <header class="admin-header">
-      <div style="display:flex; align-items:center; gap:2rem;">
-        <a href="zone-detail.html?id=1" style="text-decoration:none; color:var(--admin-text); font-size:1.5rem;">❮</a>
-        <h1 class="admin-title" id="species-title">ฮิปโปโปเตมัส #11</h1>
+    <header class="admin-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="display:flex; align-items:center; gap:1.5rem;">
+        <a href="#" id="back-btn" style="text-decoration:none; color:var(--admin-text); font-size:1.5rem;">❮</a>
+        <h1 class="admin-title" id="species-title">กำลังโหลดข้อมูล...</h1>
       </div>
+      <a href="#" id="add-btn" class="btn-confirm" style="text-decoration:none;">+ เพิ่มสัตว์ตัวใหม่</a>
     </header>
 
     <div class="admin-card">
@@ -29,40 +32,64 @@
           </tr>
         </thead>
         <tbody id="animal-list">
-          <!-- Injected by JS -->
+          <tr>
+            <td colspan="6" style="text-align:center; padding:2rem;">กำลังโหลดข้อมูล...</td>
+          </tr>
         </tbody>
       </table>
     </div>
   </main>
 
-  <script src="../js/mockData.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/admin.js"></script>
   <script>
-    initAdminLayout('animals');
+    document.addEventListener('DOMContentLoaded', () => {
+      initAdminLayout('animals');
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const sid = urlParams.get('id');
-    const sName = sid === '11' ? 'ฮิปโปโปเตมัส' : sid === '12' ? 'คาปิบาร่า' : 'เพนกวิน';
-    document.getElementById('species-title').textContent = `${sName} #${sid || '11'}`;
+      const urlParams = new URLSearchParams(window.location.search);
+      const sid = urlParams.get('speciesId');
+      const cid = urlParams.get('cageId');
+      const zid = urlParams.get('zoneId');
 
-    const mockAnimals = [
-      { id: '#1-1', name: 'น้องหมูมะนาว', gender: 'ตัวผู้', dob: 'Feb 11, 2026', cageId: '#1' },
-      { id: '#1-2', name: 'น้องหมูกรอบ', gender: 'ตัวเมีย', dob: 'Feb 1, 2026', cageId: '#1' }
-    ];
+      // เซ็ตลิงก์ปุ่มกลับและปุ่มเพิ่มสัตว์ใหม่
+      document.getElementById('back-btn').href = `zone-detail.html?id=${zid}`;
+      document.getElementById('add-btn').href = `animal-add.html?speciesId=${sid}&cageId=${cid}&zoneId=${zid}`;
 
-    document.getElementById('animal-list').innerHTML = mockAnimals.map(a => `
-      <tr>
-        <td>${a.id}</td>
-        <td>${a.name}</td>
-        <td>${a.gender}</td>
-        <td>${a.dob}</td>
-        <td>${a.cageId}</td>
-        <td style="text-align:right;">
-          <a href="animal-detail.html?id=${a.id.replace('#','')}" class="btn-edit" style="text-decoration:none; display:inline-flex;">เพิ่มเติม</a>
-        </td>
-      </tr>
-    `).join('');
+      fetchAnimals(sid, cid);
+    });
+
+    async function fetchAnimals(speciesId, enclosureId) {
+      try {
+        const res = await fetch(`/api/animals/species/${speciesId}/enclosure/${enclosureId}`);
+        const result = await res.json();
+
+        if (result.success) {
+          document.getElementById('species-title').textContent = `${result.speciesName} #${speciesId}`;
+
+          const tbody = document.getElementById('animal-list');
+          if (result.data.length > 0) {
+            tbody.innerHTML = result.data.map(a => `
+              <tr>
+                <td style="font-weight:bold;">${a.AnimalID}</td>
+                <td>${a.AnimalName}</td>
+                <td>${a.Gender === 'Male' ? 'ตัวผู้ (Male)' : 'ตัวเมีย (Female)'}</td>
+                <td>${a.BirthDate || '-'}</td>
+                <td>${a.EnclosureID}</td>
+                <td style="text-align:right;">
+                  <a href="animal-detail.html?id=${a.AnimalID}" class="btn-edit" style="text-decoration:none; display:inline-flex;">จัดการย่อย</a>
+                </td>
+              </tr>
+            `).join('');
+          } else {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">ยังไม่มีสัตว์ในกรงนี้</td></tr>';
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('animal-list').innerHTML = '<tr><td colspan="6" style="text-align:center;">ข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+      }
+    }
   </script>
 </body>
+
 </html>

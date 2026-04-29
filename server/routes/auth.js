@@ -182,11 +182,25 @@ router.post('/register', async (req, res) => {
 
 router.get('/users', async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT UserID, Username, Role, AccountStatus, CreatedAt
-      FROM UserAccount
-      ORDER BY UserID ASC
-    `);
+    const search = req.query.search || '';
+    let query = `
+      SELECT u.UserID, u.Username, u.Role, u.AccountStatus, u.CreatedAt,
+             v.VisitorFName, v.VisitorLName,
+             a.FirstName AS AdminFirstName, a.Surname AS AdminLastName
+      FROM UserAccount u
+      LEFT JOIN Visitor v ON u.VisitorID = v.VisitorID
+      LEFT JOIN Admin a ON u.AdminID = a.AdminID
+    `;
+    const params = [];
+
+    if (search) {
+      query += ` WHERE u.Username LIKE ?`;
+      params.push('%' + search + '%');
+    }
+
+    query += ` ORDER BY u.UserID ASC`;
+
+    const [rows] = await pool.query(query, params);
 
     return res.json({ success: true, data: rows });
   } catch (err) {
@@ -195,6 +209,23 @@ router.get('/users', async (req, res) => {
       success: false,
       message: 'System error while loading users.'
     });
+  }
+});
+
+router.put('/users/:id/role', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { role, requesterUsername } = req.body;
+
+    if (requesterUsername !== 'admin@zoo.th') {
+      return res.status(403).json({ success: false, message: 'ไม่มีสิทธิ์: เฉพาะ admin@zoo.th เท่านั้นที่สามารถเปลี่ยน Role ได้' });
+    }
+
+    await pool.query('UPDATE UserAccount SET Role = ? WHERE UserID = ?', [role, userId]);
+    return res.json({ success: true, message: 'เปลี่ยน Role เป็น ' + role + ' สำเร็จ' });
+  } catch (err) {
+    console.error('Update role error:', err);
+    return res.status(500).json({ success: false, message: 'System error while updating role.' });
   }
 });
 

@@ -20,6 +20,29 @@ router.get('/', async (req, res) => {
 });
 
 
+// ================= GET SPECIES IN ZONE =================
+router.get('/:id/species', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT 
+        s.SpeciesID,
+        s.SpeciesName,
+        e.EnclosureID,
+        COUNT(a.AnimalID) AS AnimalCount
+      FROM Species s
+      JOIN Animal a ON s.SpeciesID = a.SpeciesID
+      JOIN Enclosure e ON a.EnclosureID = e.EnclosureID
+      WHERE e.ZoneID = ?
+      GROUP BY s.SpeciesID, s.SpeciesName, e.EnclosureID
+      ORDER BY e.EnclosureID ASC
+    `, [req.params.id]);
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
+
+
 // ================= GET BY ID =================
 router.get('/:id', async (req, res) => {
   try {
