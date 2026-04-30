@@ -138,20 +138,20 @@
       </div>
       <div class="detail-content">
         <div class="detail-value-item"><span class="value-box" id="species-display">-</span></div>
-        <div class="detail-value-item"><span class="value-box" id="zone-display">-</span></div>
-        <div class="detail-value-item"><span class="value-box" id="enclosure-display">-</span></div>
+        <div class="detail-value-item">
+          <span class="value-box" id="zone-display">-</span>
+          <input type="number" class="edit-input" id="zone-input">
+        </div>
+        <div class="detail-value-item">
+          <span class="value-box" id="enclosure-display">-</span>
+          <input type="number" class="edit-input" id="enclosure-input">
+        </div>
         <div class="detail-value-item"><span class="value-box" id="id-display">-</span></div>
         <div class="detail-value-item">
           <span class="value-box" id="name-display">-</span>
           <input type="text" class="edit-input" id="name-input">
         </div>
-        <div class="detail-value-item">
-          <span class="value-box" id="gender-display">-</span>
-          <select class="edit-input" id="gender-input" style="display:none;">
-            <option value="Male">ตัวผู้ (Male)</option>
-            <option value="Female">ตัวเมีย (Female)</option>
-          </select>
-        </div>
+        <div class="detail-value-item"><span class="value-box" id="gender-display">-</span></div>
         <div class="detail-value-item"><span class="value-box" id="birth-display">-</span></div>
         <div class="detail-value-item"><span class="value-box" id="arrival-display">-</span></div>
         <div class="detail-value-item"><span class="value-box" id="father-display">-</span></div>
@@ -223,34 +223,37 @@
 
       // Inputs
       document.getElementById('name-input').value = a.AnimalName;
-      document.getElementById('gender-input').value = a.Gender;
+      document.getElementById('zone-input').value = a.ZoneID;
+      document.getElementById('enclosure-input').value = a.EnclosureID;
     }
 
     function setMode(mode) {
       const body = document.getElementById('main-body');
-      const genderInput = document.getElementById('gender-input');
-      
       if (mode === 'edit') {
         body.classList.remove('page-view');
         body.classList.add('page-edit');
-        genderInput.style.display = 'block';
       } else {
         body.classList.remove('page-edit');
         body.classList.add('page-view');
-        genderInput.style.display = 'none';
       }
     }
 
     async function saveData() {
       const nameInput = document.getElementById('name-input');
-      const genderInput = document.getElementById('gender-input');
+      const zoneInput = document.getElementById('zone-input');
+      const enclosureInput = document.getElementById('enclosure-input');
       const saveBtn = document.getElementById('save-btn');
 
       const newName = nameInput.value.trim();
-      const newGender = genderInput.value;
+      const newZoneId = parseInt(zoneInput.value);
+      const newEnclosureId = parseInt(enclosureInput.value);
 
       if (!newName) {
         alert('กรุณากรอกชื่อสัตว์');
+        return;
+      }
+      if (!newZoneId || !newEnclosureId) {
+        alert('กรุณากรอกหมายเลขโซนและหมายเลขกรง');
         return;
       }
 
@@ -259,7 +262,7 @@
         const res = await fetch(`/api/animals/${animalId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newName, gender: newGender })
+          body: JSON.stringify({ name: newName, zoneId: newZoneId, enclosureId: newEnclosureId })
         });
         const result = await res.json();
 

@@ -127,13 +127,24 @@ router.post('/', async (req, res) => {
 // ================= UPDATE =================
 router.put('/:id', async (req, res) => {
   try {
-    const { name, gender } = req.body;
+    const { name, zoneId, enclosureId } = req.body;
+
+    // Validate enclosure belongs to zone (if both provided)
+    if (zoneId && enclosureId) {
+      const [enc] = await pool.query(
+        'SELECT EnclosureID FROM Enclosure WHERE EnclosureID = ? AND ZoneID = ?',
+        [enclosureId, zoneId]
+      );
+      if (!enc.length) {
+        return res.status(400).json({ success: false, message: 'หมายเลขกรงไม่ตรงกับโซนที่ระบุ' });
+      }
+    }
 
     await pool.query(`
       UPDATE Animal
-      SET AnimalName = ?, Gender = ?
+      SET AnimalName = ?, EnclosureID = ?
       WHERE AnimalID = ?
-    `, [name, gender, req.params.id]);
+    `, [name, enclosureId, req.params.id]);
 
     res.json({ success: true });
 
