@@ -206,7 +206,8 @@ INSERT INTO Promotion (PromotionID, PromotionCode, DiscountAmount, Conditions, P
 -- 4. Admin
 INSERT INTO Admin (AdminID, FirstName, Surname, Email, Salary, Address, HireDate) VALUES 
 (1, 'สุลต่านอ้น', 'เมืองใต้', 'SultanAon@email.com', 70000, 'พังงา', '2026-02-10'),
-(2, 'มาหม้า', 'ใจดี', 'mama@email.com', 40000, 'นนทบุรี', '2026-02-09');
+(2, 'มาหม้า', 'ใจดี', 'mama@email.com', 40000, 'นนทบุรี', '2026-02-09'),
+(3, 'System', 'Admin', 'admin@zoo.th', 99999, 'Zoo Office', '2026-01-01');
 
 -- 5. Visitor (ข้อมูลชุดเดิม 8 คน)
 INSERT INTO Visitor (VisitorID, VisitorFName, VisitorLName, VisitorDateOfBirth, VisitorTel, VisitorEmail) VALUES
