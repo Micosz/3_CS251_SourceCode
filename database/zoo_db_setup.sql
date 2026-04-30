@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS UserAccount (
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     AccountStatus ENUM('ใช้งานอยู่', 'ถูกปิดใช้งาน') DEFAULT 'ใช้งานอยู่',
     Password VARCHAR(255) NOT NULL,
-    Username VARCHAR(30) UNIQUE NOT NULL,
+    Username VARCHAR(50) UNIQUE NOT NULL,
     Role VARCHAR(10) NOT NULL,
     FOREIGN KEY (VisitorID) REFERENCES Visitor(VisitorID) ON DELETE CASCADE,
     FOREIGN KEY (AdminID) REFERENCES Admin(AdminID) ON DELETE SET NULL

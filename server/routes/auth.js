@@ -140,7 +140,7 @@ router.post('/register', async (req, res) => {
     const [userResult] = await conn.query(
       `INSERT INTO UserAccount
         (VisitorID, AdminID, Password, Username, Role, AccountStatus)
-       VALUES (?, NULL, ?, ?, 'user', 'ใช้งานอยู่')`,
+       VALUES (?, NULL, ?, ?, 'Visitor', 'ใช้งานอยู่')`,
       [visitorId, password, email]
     );
 
@@ -156,7 +156,7 @@ router.post('/register', async (req, res) => {
         name: firstName + ' ' + lastName,
         firstName: firstName,
         email: email,
-        role: 'user',
+        role: 'Visitor',
         loginAt: new Date().toISOString()
       }
     });
