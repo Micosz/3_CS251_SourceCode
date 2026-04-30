@@ -287,7 +287,8 @@ INSERT INTO UserAccount (VisitorID, AdminID, Password, Username, Role) VALUES
 (NULL, 1, 'AdminAon_ZA007', 'Sultan_Phuket', 'Admin'),
 (NULL, 2, 'Mama_Zoo456', 'Mamalove_u', 'Admin'),
 (1, NULL, 'Mik2004pass', 'mikael_v', 'Visitor'),
-(2, NULL, 'Somchai1985', 'somchai_jai', 'Visitor');
+(2, NULL, 'Somchai1985', 'somchai_jai', 'Visitor'),
+(2, NULL, 'Admin1234', 'Admin@zoo.th', 'Admin');
 
 -- 13. Ticket (แก้ไขตามที่นายขอ: เหลือ 3 ใบ ผู้ใหญ่, เด็ก, ทารก)
 INSERT INTO Ticket (VisitorID, PromotionID, TicketType, VisitDate, TicketExpireDate, PurchaseChannel, PurchaseDate, Price) VALUES
