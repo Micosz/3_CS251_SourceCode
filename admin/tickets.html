@@ -41,11 +41,11 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th>UserID</th>
+            <th>VisitorID</th>
             <th>TicketID</th>
-            <th>สถานะ</th>
+            <th>ประเภทตั๋ว</th>
             <th>Promocode</th>
-            <th>จำนวน</th>
+            <th>วันที่เข้าชม</th>
             <th style="text-align:right;">การจัดการ</th>
           </tr>
         </thead>
@@ -72,8 +72,7 @@
         const res = await fetch('/api/tickets');
         const result = await res.json();
         if (result.success) {
-          // 1 แถวใน DB เท่ากับตั๋ว 1 ใบ
-          ticketsData = result.data.map(t => ({ ...t, displayQty: 1 }));
+          ticketsData = result.data;
           renderTickets();
         }
       } catch (err) {
@@ -89,63 +88,83 @@
         return;
       }
 
-      tbody.innerHTML = ticketsData.map((t, idx) => `
-        <tr id="row-${idx}" class="display-mode">
-          <td>#${t.VisitorID || '-'}</td>
-          <td style="font-weight:bold;">#${t.TicketID}</td>
-          <td><span style="color:#2d6a4f; font-weight:bold;">${t.TicketType}</span></td>
-          <td>${t.PromotionCode || '-'}</td>
-          <td>
-            <span class="display-val">${t.displayQty}</span>
-            <div class="edit-ctrls">
-                <button class="qty-btn" onclick="updateLocalQty(${idx}, -1)">−</button>
-                <span class="qty-display" id="qty-${idx}">${t.displayQty}</span>
-                <button class="qty-btn" disabled>+</button> <!-- ล็อกไว้เพราะสร้างเพิ่มไม่ได้ -->
-            </div>
-          </td>
-          <td style="text-align:right;">
-            <div class="action-btns display-val">
-              <button class="btn-edit" onclick="enterEditMode(${idx})">แก้ไข 📝</button>
-            </div>
-            <div class="action-btns edit-ctrls">
-              <button class="btn-confirm" onclick="saveEdit(${idx})">ยืนยัน</button>
-            </div>
-          </td>
-        </tr>
-      `).join('');
-    }
+      let html = '';
+      let lastVisitorId = null;
 
-    function enterEditMode(idx) {
-      document.getElementById(`row-${idx}`).className = 'edit-mode';
-    }
-
-    function updateLocalQty(idx, delta) {
-      // ปรับลดได้อย่างเดียว เพิ่มไม่ได้ตามเงื่อนไข
-      ticketsData[idx].displayQty = Math.max(0, ticketsData[idx].displayQty + delta);
-      document.getElementById(`qty-${idx}`).textContent = ticketsData[idx].displayQty;
-    }
-
-    async function saveEdit(idx) {
-      const ticket = ticketsData[idx];
-      if (ticket.displayQty === 0) {
-        if (confirm('จำนวนเหลือ 0 ยืนยันการยกเลิกตั๋วนี้ใช่หรือไม่?')) {
-          try {
-            const res = await fetch(`/api/tickets/${ticket.TicketID}`, { method: 'DELETE' });
-            const result = await res.json();
-            if (result.success) {
-              alert('ยกเลิกตั๋วเรียบร้อย');
-              fetchTickets(); // โหลดข้อมูลใหม่
-            }
-          } catch (err) {
-            alert('เกิดข้อผิดพลาดในการยกเลิก');
-          }
-        } else {
-          ticket.displayQty = 1; // ยกเลิกการแก้ไข ให้กลับเป็น 1 เหมือนเดิม
-          renderTickets();
+      ticketsData.forEach((t, idx) => {
+        // Add a group header if VisitorID changes
+        if (t.VisitorID !== lastVisitorId) {
+            html += `
+                <tr style="background: #f1f5f9; border-top: 2px solid #cbd5e0;">
+                    <td colspan="6" style="padding: 0.5rem 1.5rem; font-weight: bold; color: #475569; font-size: 0.85rem;">
+                        👤 ผู้เข้าชม: ${t.VisitorFName ? t.VisitorFName + ' ' + t.VisitorLName : 'Visitor #' + t.VisitorID}
+                    </td>
+                </tr>
+            `;
+            lastVisitorId = t.VisitorID;
         }
-      } else {
-        document.getElementById(`row-${idx}`).className = 'display-mode';
-      }
+
+        html += `
+            <tr>
+              <td>#${t.VisitorID || '-'}</td>
+              <td style="font-weight:bold;">#${t.TicketID}</td>
+              <td><span style="color:#2d6a4f; font-weight:bold;">${t.TicketType}</span></td>
+              <td>${t.PromotionCode || '-'}</td>
+              <td>${t.VisitDate}</td>
+              <td style="text-align:right;">
+                <div class="action-btns">
+                  <button class="btn-edit" onclick="duplicateTicket(${idx})" title="เพิ่มตั๋วใบใหม่สำหรับ User นี้">เพิ่ม +</button>
+                  <button class="btn-cancel" onclick="deleteTicket(${t.TicketID})" title="ลบตั๋วใบนี้">ลบ 🗑️</button>
+                </div>
+              </td>
+            </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    async function duplicateTicket(idx) {
+        const ticket = ticketsData[idx];
+        if (confirm(`ต้องการเพิ่มตั๋วประเภท ${ticket.TicketType} ให้กับ Visitor #${ticket.VisitorID} อีก 1 ใบ ใช่หรือไม่?`)) {
+            try {
+                const res = await fetch('/api/tickets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        visitorId: ticket.VisitorID,
+                        promotionId: ticket.PromotionID,
+                        ticketType: ticket.TicketType,
+                        visitDate: ticket.VisitDate,
+                        price: ticket.Price
+                    })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert('เพิ่มตั๋วใบใหม่เรียบร้อย');
+                    fetchTickets();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (err) {
+                alert('เกิดข้อผิดพลาดในการสร้างตั๋วเพิ่ม');
+            }
+        }
+    }
+
+    async function deleteTicket(ticketId) {
+        if (confirm('ยืนยันการลบตั๋วใบนี้ใช่หรือไม่?')) {
+            try {
+                const res = await fetch(`/api/tickets/${ticketId}`, { method: 'DELETE' });
+                const result = await res.json();
+                if (result.success) {
+                    alert('ลบตั๋วเรียบร้อย');
+                    fetchTickets();
+                }
+            } catch (err) {
+                alert('เกิดข้อผิดพลาดในการลบ');
+            }
+        }
     }
   </script>
 </body>

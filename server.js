@@ -22,10 +22,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// serve static
-app.use(express.static(__dirname));
+// Request logger
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 
-// เชื่อม route backend
+// เชื่อม route backend - Move routes BEFORE static to ensure API calls are handled correctly
 app.use('/api/auth', authRoutes);
 app.use('/api/animals', animalRoutes);
 app.use('/api/admins', adminRoutes);
@@ -40,6 +43,18 @@ app.use('/api/species', speciesRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/visitors', visitorRoutes);
 app.use('/api/users', userRoutes);
+
+// serve static
+app.use(express.static(__dirname));
+
+// Global error handler for JSON responses
+app.use((err, req, res, next) => {
+  console.error('Global Error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal Server Error'
+  });
+});
 
 // ================= ROUTES =================
 

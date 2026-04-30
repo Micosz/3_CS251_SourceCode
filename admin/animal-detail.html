@@ -53,14 +53,6 @@
       font-size: 0.95rem;
       width: 220px;
     }
-    .edit-select {
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #cbd5e0;
-      border-radius: 6px;
-      font-size: 0.95rem;
-      width: 220px;
-      background: #f8fafc;
-    }
 
     /* Header Icons */
     .header-actions {
@@ -81,6 +73,7 @@
       transition: transform 0.2s;
     }
     .icon-btn-circle:hover { transform: scale(1.1); }
+    .icon-btn-circle:disabled { background: #cbd5e0 !important; cursor: not-allowed; }
     .icon-btn-circle.cancel { background: #ff5f5f; color: white; }
     .icon-btn-circle.save { background: #4df04d; color: white; box-shadow: 0 4px 10px rgba(77, 240, 77, 0.4); }
 
@@ -115,26 +108,24 @@
   <main class="admin-main">
     <header class="admin-header" style="display:flex; justify-content:space-between; align-items:center;">
       <div style="display:flex; align-items:center; gap:2rem;">
-        <a href="species-detail.html?id=11" style="text-decoration:none; color:var(--admin-text); font-size:1.5rem;">❮</a>
-        <h1 class="admin-title">ฮิปโปโปเตมัส <span style="color:var(--admin-muted); font-weight:400; font-size:1.5rem;">#11</span></h1>
-        <span style="color:var(--admin-muted); font-size:0.9rem; margin-left:1rem;">วันที่แก้ไขล่าสุด: Feb 29, 2026</span>
+        <a href="#" id="back-btn" style="text-decoration:none; color:var(--admin-text); font-size:1.5rem;">❮</a>
+        <h1 class="admin-title"><span id="title-name">...</span> <span id="title-id" style="color:var(--admin-muted); font-weight:400; font-size:1.5rem;">#</span></h1>
       </div>
 
       <div class="header-actions">
-        <!-- View Mode Actions -->
         <div id="edit-icons">
           <button class="edit-toggle-btn" onclick="setMode('edit')">แก้ไข 📝</button>
         </div>
-        <!-- Edit Mode Actions -->
         <div id="save-icons">
           <button class="icon-btn-circle cancel" onclick="setMode('view')">✕</button>
-          <button class="icon-btn-circle save" onclick="saveData()">✓</button>
+          <button class="icon-btn-circle save" id="save-btn" onclick="saveData()">✓</button>
         </div>
       </div>
     </header>
 
     <div class="detail-container">
       <div class="detail-sidebar">
+        <div class="detail-label-item">ชื่อสายพันธุ์</div>
         <div class="detail-label-item">หมายเลขโซน</div>
         <div class="detail-label-item">หมายเลขกรง</div>
         <div class="detail-label-item">หมายเลขสัตว์</div>
@@ -146,70 +137,166 @@
         <div class="detail-label-item">หมายเลขแม่พันธุ์</div>
       </div>
       <div class="detail-content">
+        <div class="detail-value-item"><span class="value-box" id="species-display">-</span></div>
+        <div class="detail-value-item"><span class="value-box" id="zone-display">-</span></div>
+        <div class="detail-value-item"><span class="value-box" id="enclosure-display">-</span></div>
+        <div class="detail-value-item"><span class="value-box" id="id-display">-</span></div>
         <div class="detail-value-item">
-          <span class="value-box">#000001</span>
-          <select class="edit-select"><option>#000001</option><option>#111111</option></select>
+          <span class="value-box" id="name-display">-</span>
+          <input type="text" class="edit-input" id="name-input">
         </div>
         <div class="detail-value-item">
-          <span class="value-box">#1</span>
-          <select class="edit-select"><option>#1</option><option>#2</option></select>
+          <span class="value-box" id="gender-display">-</span>
+          <select class="edit-input" id="gender-input" style="display:none;">
+            <option value="Male">ตัวผู้ (Male)</option>
+            <option value="Female">ตัวเมีย (Female)</option>
+          </select>
         </div>
-        <div class="detail-value-item">
-          <span class="value-box">#1-1</span>
-          <!-- ID is usually not editable -->
-        </div>
-        <div class="detail-value-item">
-          <span class="value-box" id="name-display">น้องหมูมะนาว</span>
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-            <input type="text" class="edit-input" id="name-input" value="น้องหมูมะนาว">
-            <span style="color:red; cursor:pointer;" class="edit-input" onclick="document.getElementById('name-input').value=''">✕</span>
-          </div>
-        </div>
-        <div class="detail-value-item"><span class="value-box">ตัวผู้</span></div>
-        <div class="detail-value-item"><span class="value-box">Feb 11, 2026</span></div>
-        <div class="detail-value-item"><span class="value-box">Feb 18, 2026</span></div>
-        <div class="detail-value-item"><span class="value-box">-</span></div>
-        <div class="detail-value-item"><span class="value-box">-</span></div>
+        <div class="detail-value-item"><span class="value-box" id="birth-display">-</span></div>
+        <div class="detail-value-item"><span class="value-box" id="arrival-display">-</span></div>
+        <div class="detail-value-item"><span class="value-box" id="father-display">-</span></div>
+        <div class="detail-value-item"><span class="value-box" id="mother-display">-</span></div>
 
-        <div class="delete-container page-view-only">
-          <button class="btn-cancel" style="padding: 0.8rem 2.5rem; font-size:1rem;" onclick="deleteAnimal()">ลบข้อมูล</button>
+        <div class="delete-container">
+          <button class="btn-cancel" id="delete-btn" style="padding: 0.8rem 2.5rem; font-size:1rem;" onclick="deleteAnimal()">ลบข้อมูล</button>
         </div>
       </div>
     </div>
   </main>
 
-  <script src="../js/mockData.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/admin.js"></script>
   <script>
     initAdminLayout('animals');
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const animalId = urlParams.get('id');
+    let animalData = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!animalId) {
+        alert('ไม่พบหมายเลขสัตว์');
+        window.location.href = 'zones.html';
+        return;
+      }
+      fetchAnimalDetail();
+    });
+
+    async function fetchAnimalDetail() {
+      try {
+        const res = await fetch(`/api/animals/${animalId}`);
+        const result = await res.json();
+
+        if (result.success) {
+          animalData = result.data;
+          renderData();
+        } else {
+          console.error('Fetch error:', result.message);
+          alert('ไม่พบข้อมูลสัตว์ตัวนี้ในระบบ');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('เกิดข้อผิดพลาดในการโหลดข้อมูลจากเซิร์ฟเวอร์');
+      }
+    }
+
+    function renderData() {
+      const a = animalData;
+      if (!a) return;
+      
+      // Header
+      document.getElementById('title-name').textContent = a.AnimalName;
+      document.getElementById('title-id').textContent = `#${a.AnimalID}`;
+      document.getElementById('back-btn').href = `species-detail.html?speciesId=${a.SpeciesID}&cageId=${a.EnclosureID}&zoneId=${a.ZoneID}`;
+
+      // Values
+      document.getElementById('species-display').textContent = a.SpeciesName;
+      document.getElementById('zone-display').textContent = `#${a.ZoneID} ${a.ZoneName}`;
+      document.getElementById('enclosure-display').textContent = `#${a.EnclosureID}`;
+      document.getElementById('id-display').textContent = `#${a.AnimalID}`;
+      document.getElementById('name-display').textContent = a.AnimalName;
+      document.getElementById('gender-display').textContent = a.Gender === 'Male' ? 'ตัวผู้ (Male)' : 'ตัวเมีย (Female)';
+      document.getElementById('birth-display').textContent = a.BirthDate || '-';
+      document.getElementById('arrival-display').textContent = a.ArrivalDate || '-';
+      document.getElementById('father-display').textContent = a.FatherID ? `#${a.FatherID}` : '-';
+      document.getElementById('mother-display').textContent = a.MotherID ? `#${a.MotherID}` : '-';
+
+      // Inputs
+      document.getElementById('name-input').value = a.AnimalName;
+      document.getElementById('gender-input').value = a.Gender;
+    }
+
     function setMode(mode) {
       const body = document.getElementById('main-body');
-      const delBtn = document.querySelector('.delete-container');
+      const genderInput = document.getElementById('gender-input');
       
       if (mode === 'edit') {
         body.classList.remove('page-view');
         body.classList.add('page-edit');
-        delBtn.style.display = 'none';
+        genderInput.style.display = 'block';
       } else {
         body.classList.remove('page-edit');
         body.classList.add('page-view');
-        delBtn.style.display = 'block';
+        genderInput.style.display = 'none';
       }
     }
 
-    function saveData() {
-      const newName = document.getElementById('name-input').value;
-      document.getElementById('name-display').textContent = newName;
-      setMode('view');
-      alert('บันทึกข้อมูลสำเร็จ!');
+    async function saveData() {
+      const nameInput = document.getElementById('name-input');
+      const genderInput = document.getElementById('gender-input');
+      const saveBtn = document.getElementById('save-btn');
+
+      const newName = nameInput.value.trim();
+      const newGender = genderInput.value;
+
+      if (!newName) {
+        alert('กรุณากรอกชื่อสัตว์');
+        return;
+      }
+
+      try {
+        saveBtn.disabled = true;
+        const res = await fetch(`/api/animals/${animalId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName, gender: newGender })
+        });
+        const result = await res.json();
+
+        if (result.success) {
+          alert('บันทึกข้อมูลสำเร็จ!');
+          await fetchAnimalDetail();
+          setMode('view');
+        } else {
+          alert('บันทึกข้อมูลไม่สำเร็จ: ' + (result.message || 'Unknown error'));
+        }
+      } catch (err) {
+        console.error(err);
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
+      } finally {
+        saveBtn.disabled = false;
+      }
     }
 
-    function deleteAnimal() {
+    async function deleteAnimal() {
       if (confirm('คุณแน่ใจว่าต้องการลบข้อมูลสัตว์ตัวนี้?')) {
-        alert('ลบข้อมูลสำเร็จ');
-        window.location.href = 'species-detail.html?id=11';
+        const deleteBtn = document.getElementById('delete-btn');
+        try {
+          deleteBtn.disabled = true;
+          const res = await fetch(`/api/animals/${animalId}`, { method: 'DELETE' });
+          const result = await res.json();
+          if (result.success) {
+            alert('ลบข้อมูลสำเร็จ');
+            window.location.href = document.getElementById('back-btn').href;
+          } else {
+            alert('ลบข้อมูลไม่สำเร็จ');
+          }
+        } catch (err) {
+          console.error(err);
+          alert('เกิดข้อผิดพลาดในการลบข้อมูล');
+        } finally {
+          deleteBtn.disabled = false;
+        }
       }
     }
   </script>

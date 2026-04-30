@@ -37,6 +37,11 @@ function initAdminLayout(activeId) {
     </div>
     <nav class="admin-nav">
       ${navItems}
+      <hr style="margin: 1rem 0; border: none; border-top: 1px solid rgba(255,255,255,0.1);">
+      <a href="../index.html" class="nav-item">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">กลับหน้าหลัก (User)</span>
+      </a>
     </nav>
     <div class="admin-sidebar-footer">
       <button onclick="AUTH.logout()" class="nav-item logout-btn">
