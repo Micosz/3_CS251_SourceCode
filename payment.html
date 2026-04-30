@@ -364,7 +364,7 @@
               </div>
             </div>
 
-            <button class="btn-pay" onclick="processPayment('promptpay')">ชำระเงิน</button>
+            <button class="btn-pay" onclick="processPayment(event, 'promptpay')">ชำระเงิน</button>
           </div>
 
           <!-- ── CreditCard Content ── -->
@@ -416,8 +416,7 @@
               <span>หลังจากส่งคำสั่งซื้อแล้ว<br>คุณจะถูกนำไปยังขั้นตอนการชำระเงินที่ปลอดภัย.</span>
             </div>
 
-            <button class="btn-pay" onclick="processPayment('creditcard')">ชำระเงิน</button>
-          </div>
+            <button class="btn-pay" onclick="processPayment(event, 'creditcard')">ชำระเงิน</button>
         </div>
       </div>
     </div>
@@ -441,20 +440,37 @@
     </div>
   </div>
 
-  <script src="js/mockData.js"></script>
+  <script src="js/layout.js"></script>
   <script src="js/cart.js"></script>
   <script src="js/auth.js"></script>
-  <script>
+ <script>
     const user = AUTH.requireAuth();
-    if (!user) throw new Error('Not logged in');
 
     initNavbar('payment');
     initFooter();
     initToaster();
 
+    /* ================= HISTORY FUNCTION (🔥 เพิ่มใหม่) ================= */
+    function addTicketHistory(userId, items, discount, promoCode, method) {
+      const history = JSON.parse(localStorage.getItem('ticket_history') || '[]');
+
+      history.push({
+        userId,
+        items,
+        discount,
+        promoCode,
+        method,
+        total: CART.getTotal(),
+        date: new Date().toISOString()
+      });
+
+      localStorage.setItem('ticket_history', JSON.stringify(history));
+    }
+
     /* ── Populate summary ── */
     (function buildSummary() {
       const items = CART.getItems();
+
       if (!items || items.length === 0) {
         document.getElementById('payment-body').innerHTML = `
           <div class="empty-state" style="grid-column:1/-1;">
@@ -467,12 +483,10 @@
         return;
       }
 
-      const subtotal = CART.getSubtotal();
       const discount = CART.getDiscount();
       const total    = CART.getTotal();
       const promo    = CART.getPromo();
 
-      // Item rows
       document.getElementById('summary-items').innerHTML = items.map(item => `
         <div class="summary-row">
           <div class="summary-item-label">บัตรเข้าชมราคา${item.type} x${item.qty}</div>
@@ -481,24 +495,27 @@
         </div>
       `).join('');
 
-      // Discount row
       if (discount > 0 && promo) {
         document.getElementById('summary-discount-row').style.display = 'flex';
-        document.getElementById('summary-discount-label').textContent = `ใช้โค้ดส่วนลด: ${promo.code} แล้ว`;
-        document.getElementById('summary-discount-amount').textContent = `-${discount}`;
+        document.getElementById('summary-discount-label').textContent =
+          `ใช้โค้ดส่วนลด: ${promo.code} แล้ว`;
+        document.getElementById('summary-discount-amount').textContent =
+          `-${discount}`;
       }
 
-      // Total
       document.getElementById('summary-total').textContent = `${total}฿`;
 
-      // Generate ref number
+      // Generate ref
       const ref = '00' + Math.floor(Math.random() * 9e12).toString().padStart(13, '0');
       document.getElementById('qr-ref').textContent = ref;
 
-      // QR dynamic amount
-      const qrData = `ZOOZOO_PAYMENT_${total}_${ref}`;
-      document.getElementById('qr-code-img').src =
-        `https://api.qrserver.com/v1/create-qr-code/?size=155x155&data=${encodeURIComponent(qrData)}`;
+      // 🔥 FIX: กัน null error
+      const qrImg = document.getElementById('qr-code-img');
+      if (qrImg) {
+        const qrData = `ZOOZOO_PAYMENT_${total}_${ref}`;
+        qrImg.src =
+          `https://api.qrserver.com/v1/create-qr-code/?size=155x155&data=${encodeURIComponent(qrData)}`;
+      }
     })();
 
     /* ── Tab switch ── */
@@ -509,70 +526,92 @@
       document.getElementById('content-' + tab).classList.add('active');
     }
 
-    /* ── Card number formatter ── */
+    /* ── Card format ── */
     function formatCardNum(el) {
       let v = el.value.replace(/\D/g, '').substring(0, 16);
       el.value = v.replace(/(.{4})/g, '$1 ').trim();
     }
+
     function formatExp(el) {
       let v = el.value.replace(/\D/g, '').substring(0, 4);
       if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2);
       el.value = v;
     }
 
-    /* ── Payment processing ── */
-    function processPayment(method) {
+    /* ================= PAYMENT ================= */
+    function processPayment(event, method) {
       const total = CART.getTotal();
       const items = CART.getItems();
-      if (!items.length) return;
 
-      // Basic credit card validation
+      if (!items.length) {
+        showToast('ไม่มีสินค้าในตะกร้า', 'error');
+        return;
+      }
+
       if (method === 'creditcard') {
         const email = document.getElementById('cc-email').value.trim();
         const num   = document.getElementById('cc-number').value.replace(/\s/g,'');
         const exp   = document.getElementById('cc-exp').value;
         const cvc   = document.getElementById('cc-cvc').value;
+
         if (!email || !num || num.length < 16 || !exp || !cvc) {
           showToast('กรุณากรอกข้อมูลบัตรให้ครบถ้วน', 'error');
           return;
         }
       }
 
-      const btn = event.target;
-      btn.disabled = true;
-      btn.textContent = 'กำลังดำเนินการ...';
+      const btn = event?.target;
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'กำลังดำเนินการ...';
+      }
 
+      // Fix: mock payment completes instantly. No real gateway or long processing state.
       setTimeout(() => {
-        const promo    = CART.getPromo();
-        const discount = CART.getDiscount();
+        try {
+          const promo    = CART.getPromo();
+          const discount = CART.getDiscount();
 
-        // Save to mock history (all items at once)
-        addTicketHistory(
-          user.id,
-          items,
-          discount,
-          promo?.code || '',
-          method === 'promptpay' ? 'PromptPay' : 'บัตรเครดิต'
-        );
+          // 🔥 FIX: function มีแล้ว
+          addTicketHistory(
+            user.id,
+            items,
+            discount,
+            promo?.code || '',
+            method === 'promptpay' ? 'PromptPay' : 'บัตรเครดิต'
+          );
 
-        CART.clear();
-        updateCartBadge();
+          CART.clear();
+          updateCartBadge();
 
-        // Fill success modal
-        const ref = document.getElementById('qr-ref')?.textContent || '—';
-        document.getElementById('success-ref').textContent   = '#' + ref.slice(-8);
-        document.getElementById('success-date').textContent  =
-          new Date().toLocaleDateString('th-TH', { year:'numeric', month:'long', day:'numeric' });
-        document.getElementById('success-total').textContent = `฿${total}`;
+          const ref = document.getElementById('qr-ref')?.textContent || '—';
 
-        openModal('success-modal');
-        btn.disabled = false;
-        btn.textContent = 'ชำระเงิน';
-      }, 1600);
+          document.getElementById('success-ref').textContent =
+            '#' + ref.slice(-8);
+
+          document.getElementById('success-date').textContent =
+            new Date().toLocaleDateString('th-TH');
+
+          document.getElementById('success-total').textContent =
+            `฿${total}`;
+
+          openModal('success-modal');
+
+        } catch (err) {
+          console.error(err);
+          showToast('เกิดข้อผิดพลาด', 'error');
+        }
+
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'ชำระเงิน';
+        }
+
+      }, 0);
     }
 
-    /* Block modal overlay from closing on user click (require button press) */
-    document.getElementById('success-modal').addEventListener('click', e => e.stopPropagation());
-  </script>
+    document.getElementById('success-modal')
+      .addEventListener('click', e => e.stopPropagation());
+</script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/user.css">
 </head>
+
 <body>
 
   <main class="animals-page">
@@ -26,9 +28,15 @@
       <!-- Zone filter tabs -->
       <div class="zone-filter-tabs">
         <button class="zone-tab active" data-zone="all" onclick="filterZone('all', this)">🌍 ทั้งหมด</button>
-        <button class="zone-tab" data-zone="1" onclick="filterZone(1, this)"><div class="zone-color zone-1-color"></div> Zone 1 — แอฟริกา</button>
-        <button class="zone-tab" data-zone="2" onclick="filterZone(2, this)"><div class="zone-color zone-2-color"></div> Zone 2 — เอเชีย</button>
-        <button class="zone-tab" data-zone="3" onclick="filterZone(3, this)"><div class="zone-color zone-3-color"></div> Zone 3 — อเมริกา</button>
+        <button class="zone-tab" data-zone="1" onclick="filterZone(1, this)">
+          <div class="zone-color zone-1-color"></div> Zone 1 — แอฟริกา
+        </button>
+        <button class="zone-tab" data-zone="2" onclick="filterZone(2, this)">
+          <div class="zone-color zone-2-color"></div> Zone 2 — เอเชีย
+        </button>
+        <button class="zone-tab" data-zone="3" onclick="filterZone(3, this)">
+          <div class="zone-color zone-3-color"></div> Zone 3 — อเมริกา
+        </button>
       </div>
 
       <!-- Animals grid -->
@@ -39,26 +47,61 @@
     </div>
   </main>
 
-  <script src="js/mockData.js"></script>
+  <script src="js/layout.js"></script>
   <script src="js/cart.js"></script>
   <script src="js/auth.js"></script>
+
   <script>
     initNavbar('animals');
     initFooter();
 
-    const API = 'http://localhost:3000/api';
     const zoneColors = { 1: '#f97316', 2: '#ec4899', 3: '#a855f7' };
 
+    let ALL_ANIMALS = [];
+
+    // ================= LOAD FROM API =================
+    async function loadAnimals() {
+      try {
+        const res = await fetch('/api/animals');
+        const json = await res.json();
+
+        if (!json.success) throw new Error('โหลดข้อมูลไม่สำเร็จ');
+
+        // 🔥 ใช้ AnimalID เป็นชื่อรูป
+        ALL_ANIMALS = json.data.map(a => ({
+          id: a.AnimalID,
+          nameTH: a.AnimalName,
+          speciesTH: a.SpeciesName,
+          gender: a.Gender,
+          zoneId: a.ZoneID,
+          zone: a.ZoneName || 'ไม่ระบุโซน',
+          cageCode: a.EnclosureID || '-',
+          cardImage: `images/animals/${a.AnimalID}.png`
+        }));
+
+        renderAnimals(ALL_ANIMALS);
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('animals-grid').innerHTML = `
+        <div class="empty-state">
+          <h3>โหลดข้อมูลไม่สำเร็จ</h3>
+        </div>
+      `;
+      }
+    }
+
+    // ================= RENDER =================
     function renderAnimals(animals) {
       const grid = document.getElementById('animals-grid');
 
       if (animals.length === 0) {
         grid.innerHTML = `
-          <div class="empty-state" style="grid-column:1/-1;">
-            <div class="empty-icon">🐾</div>
-            <h3>ไม่พบสัตว์ในโซนนี้</h3>
-          </div>
-        `;
+        <div class="empty-state" style="grid-column:1/-1;">
+          <div class="empty-icon">🐾</div>
+          <h3>ไม่พบสัตว์ในโซนนี้</h3>
+        </div>
+      `;
         return;
       }
 
@@ -67,23 +110,23 @@
           <div class="animal-card-img-wrap">
             <img
               class="animal-card-img"
-              src="images/${a.AnimalName}.png"
-              alt="${a.AnimalName}"
+              src="${a.cardImage}"
+              alt="${a.nameTH}"
               loading="lazy"
               onerror="this.parentElement.style.background='var(--light-green)'; this.style.display='none';"
             >
-            <div class="animal-zone-badge" style="background:${zoneColors[a.ZoneID] || 'var(--primary-dark)'};">
-              📍 ${a.ZoneName || 'ไม่มีโซน'}
+            <div class="animal-zone-badge" style="background:${zoneColors[a.zoneId] || 'var(--primary-dark)'};">
+              📍 ${a.zone}
             </div>
           </div>
           <div class="animal-card-body">
-            <div class="animal-name">${a.AnimalName}</div>
-            <div class="animal-species">${a.SpeciesName}</div>
+            <div class="animal-name">${a.nameTH}</div>
+            <div class="animal-species">${a.speciesTH}</div>
             <div style="display:flex; gap:0.5rem; margin-top:0.75rem; flex-wrap:wrap;">
-              <span class="badge badge-gray">⚥ ${a.Gender}</span>
-              <span class="badge badge-gray">📦 ${a.EnclosureID || '-'}</span>
+              <span class="badge badge-gray">⚥ ${a.gender}</span>
+              <span class="badge badge-gray">📦 ${a.cageCode}</span>
             </div>
-            <a href="animal-detail.html?id=${a.AnimalID}" class="btn btn-sm" style="margin-top:0.85rem; display:inline-flex;">
+            <a href="animal-detail.html?id=${a.id}" class="btn btn-sm" style="margin-top:0.85rem; display:inline-flex;">
               ดูเพิ่ม →
             </a>
           </div>
@@ -91,40 +134,17 @@
       `).join('');
     }
 
-    // ดึงข้อมูลจาก API จริง ไม่ใช้ mock แล้ว
-    async function loadAnimals() {
-      try {
-        const res = await fetch(`${API}/animals`);
-        const data = await res.json();
-        if (data.success) renderAnimals(data.data);
-      } catch (err) {
-        console.error('โหลดสัตว์ไม่ได้:', err);
-        // fallback เป็น mock ถ้า server ไม่รัน
-        renderAnimals(MOCK_ANIMALS);
-      }
-    }
-
-    async function filterZone(zone, btn) {
+    function filterZone(zone, btn) {
       document.querySelectorAll('.zone-tab').forEach(t => t.classList.remove('active'));
       btn.classList.add('active');
 
-      if (zone === 'all') {
-        loadAnimals();
-        return;
-      }
-
-      try {
-        const res = await fetch(`${API}/animals/zone/${zone}`);
-        const data = await res.json();
-        if (data.success) renderAnimals(data.data);
-      } catch (err) {
-        console.error('filter โซนไม่ได้:', err);
-        const animals = MOCK_ANIMALS.filter(a => a.zoneId === parseInt(zone));
-        renderAnimals(animals);
-      }
+      const animals = zone === 'all' ? MOCK_ANIMALS : MOCK_ANIMALS.filter(a => a.zoneId === parseInt(zone));
+      renderAnimals(animals);
     }
 
-    loadAnimals();
+    // Initial render
+    renderAnimals(MOCK_ANIMALS);
   </script>
 </body>
+
 </html>

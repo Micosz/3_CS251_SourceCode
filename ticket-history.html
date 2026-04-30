@@ -176,7 +176,7 @@
       <!-- QR placeholder -->
       <div class="qr-box">
         <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M3 3h7v7H3V3zm2 2v3h3V5H5zm9-2h7v7h-7V3zm2 2v3h3V5h-3zM3 14h7v7H3v-7zm2 2v3h3v-3H5zm9 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4-2h2v2h-2v-2zm0 4h2v2h-2v-2z"/>
+          <img id="detail-qr" src="images/qrcode.png" alt="QR Code">
         </svg>
       </div>
       <div style="text-align:center; margin-bottom:1.25rem;">
@@ -187,7 +187,8 @@
     </div>
   </div>
 
-  <script src="js/mockData.js"></script>
+ 
+  <script src="js/layout.js"></script>
   <script src="js/cart.js"></script>
   <script src="js/auth.js"></script>
   <script>
@@ -197,13 +198,33 @@
     initNavbar('history');
     initFooter();
 
-    // Format date: "Apr 12,2026"
+    // ================= FORMAT DATE =================
     function formatDate(iso) {
       const d = new Date(iso);
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      return `${months[d.getMonth()]} ${d.getDate()},${d.getFullYear()}`;
+      return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
     }
 
+    // ================= GET HISTORY (🔥 FIX หลัก) =================
+    function getUserTicketHistory(userId) {
+      const history = JSON.parse(localStorage.getItem('ticket_history') || '[]');
+
+      return history
+        .filter(h => String(h.userId) === String(userId))
+        .map((h, index) => ({
+          id: 'TKT-' + (index + 1),
+          date: h.date,
+          type: h.items.map(i => i.type).join(', '),
+          total: h.total,
+          items: h.items,
+          discount: h.discount || 0,
+          promo: h.promoCode || '',
+          paymentMethod: h.method
+        }))
+        .reverse(); // ล่าสุดก่อน
+    }
+
+    // ================= LOAD =================
     const history = getUserTicketHistory(user.id);
 
     if (!history || history.length === 0) {
@@ -211,38 +232,65 @@
       document.getElementById('history-table').style.display = 'none';
     } else {
       const tbody = document.getElementById('history-tbody');
+
       tbody.innerHTML = history.map(t => `
         <tr>
           <td class="ticket-id">#${t.id.replace('TKT-','')}</td>
           <td class="ticket-date">${formatDate(t.date)}</td>
           <td class="ticket-type">${t.type}</td>
-          <td class="ticket-price">${t.total} ฿</td>
+          <td class="ticket-price">฿${t.total}</td>
           <td style="text-align:right;">
-            <a href="ticket-detail.html?id=${t.id}" class="btn-detail">ดูรายละเอียด</a>
+            <button class="btn-detail" onclick="showDetail('${t.id}')">
+              ดูรายละเอียด
+            </button>
           </td>
         </tr>
       `).join('');
     }
 
-    function showDetail(ticket) {
-      const rows = [
-        { label: 'หมายเลขบัตร',   value: `<strong>${ticket.id}</strong>` },
-        { label: 'ประเภทบัตร',    value: ticket.type },
-        { label: 'จำนวน',         value: `${ticket.quantity} ใบ` },
-        { label: 'ราคาต่อใบ',     value: ticket.unitPrice === 0 ? 'ฟรี' : `฿${ticket.unitPrice}` },
-        { label: 'ส่วนลด',        value: ticket.discount > 0 ? `฿${ticket.discount} (${ticket.promo || ''})` : 'ไม่มี' },
-        { label: 'ยอดรวม',        value: `<strong>฿${ticket.total}</strong>` },
-        { label: 'วิธีชำระเงิน', value: ticket.paymentMethod },
-        { label: 'วันที่ซื้อ',   value: formatDate(ticket.date) },
-      ];
+    // ================= DETAIL =================
+    function showDetail(ticketId) {
+      const history = getUserTicketHistory(user.id);
+      const ticket = history.find(t => t.id === ticketId);
 
-      document.getElementById('detail-content').innerHTML = rows.map(r => `
+      if (!ticket) return;
+
+      const itemRows = ticket.items.map(i => `
         <div class="detail-row">
-          <span class="detail-label">${r.label}</span>
-          <span class="detail-value">${r.value}</span>
+          <span class="detail-label">${i.type} x${i.qty}</span>
+          <span class="detail-value">
+            ${i.isFree ? 'ฟรี' : '฿' + (i.price * i.qty)}
+          </span>
         </div>
       `).join('');
 
+      const rows = `
+        ${itemRows}
+
+        <div class="detail-row">
+          <span class="detail-label">ส่วนลด</span>
+          <span class="detail-value">
+            ${ticket.discount > 0 ? `฿${ticket.discount} (${ticket.promo})` : 'ไม่มี'}
+          </span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">ยอดรวม</span>
+          <span class="detail-value"><strong>฿${ticket.total}</strong></span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">วิธีชำระเงิน</span>
+          <span class="detail-value">${ticket.paymentMethod}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">วันที่ซื้อ</span>
+          <span class="detail-value">${formatDate(ticket.date)}</span>
+        </div>
+      `;
+
+      document.getElementById('detail-content').innerHTML = rows;
       document.getElementById('detail-modal').classList.add('active');
     }
 
@@ -250,10 +298,10 @@
       document.getElementById('detail-modal').classList.remove('active');
     }
 
-    // Close on overlay click
+    // Close modal when click outside
     document.getElementById('detail-modal').addEventListener('click', function(e) {
       if (e.target === this) closeDetailModal();
     });
-  </script>
+</script>
 </body>
 </html>

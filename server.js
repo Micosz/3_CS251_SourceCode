@@ -2,13 +2,44 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 
+const authRoutes = require('./server/routes/auth'); 
+const animalRoutes = require('./server/routes/animal');
+const adminRoutes = require('./server/routes/admin');
+const enclosureRoutes = require('./server/routes/enclosure');
+const zoneRoutes = require('./server/routes/zone');
+const assignedRoutes = require('./server/routes/assigned_to');
+const eventRoutes = require('./server/routes/eventschedule');
+const phoneRoutes = require('./server/routes/phone');
+const promotionRoutes = require('./server/routes/promotion');
+const showRefRoutes = require('./server/routes/show_reference');
+const speciesRoutes = require('./server/routes/species');
+const ticketRoutes = require('./server/routes/ticket');
+const visitorRoutes = require('./server/routes/visitor');
+const userRoutes = require('./server/routes/useraccount');
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// 👇 serve static จาก root project (สำคัญ)
+// serve static
 app.use(express.static(__dirname));
+
+// เชื่อม route backend
+app.use('/api/auth', authRoutes);
+app.use('/api/animals', animalRoutes);
+app.use('/api/admins', adminRoutes);
+app.use('/api/enclosures', enclosureRoutes);
+app.use('/api/zones', zoneRoutes);
+app.use('/api/assignments', assignedRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api/phones', phoneRoutes);
+app.use('/api/promotions', promotionRoutes);
+app.use('/api/show-ref', showRefRoutes);
+app.use('/api/species', speciesRoutes);
+app.use('/api/tickets', ticketRoutes);
+app.use('/api/visitors', visitorRoutes);
+app.use('/api/users', userRoutes);
 
 // ================= ROUTES =================
 

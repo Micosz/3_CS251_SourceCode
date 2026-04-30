@@ -226,75 +226,65 @@
     </div>
   </main>
 
-  <script src="js/mockData.js"></script>
+  <script src="js/layout.js"></script>
   <script src="js/cart.js"></script>
   <script src="js/auth.js"></script>
-  <script>
-    initNavbar('animals');
-    initFooter();
+<script>
+  initNavbar('animals');
+  initFooter();
 
-    const params   = new URLSearchParams(window.location.search);
-    const animal   = getAnimalById(params.get('id'));
+  const params = new URLSearchParams(window.location.search);
+  const animalId = params.get('id');
 
-    if (!animal) {
-      document.getElementById('not-found').style.display = 'block';
-      document.getElementById('animal-detail').style.display = 'none';
-      document.getElementById('nearby-section').style.display = 'none';
-    } else {
-      document.title = `${animal.nameTH} — สวนสัตว์เขาไม่รัก`;
-      document.getElementById('breadcrumb-name').textContent = animal.nameTH;
+  async function loadAnimalDetail() {
+    try {
+      const res = await fetch(`/api/animals/${animalId}`);
+      const json = await res.json();
 
-      // Zone label
-      const zone = MOCK_ZONES.find(z => z.id === animal.zoneId);
-      document.getElementById('zone-label').textContent = zone ? zone.name : animal.zone;
+      if (!json.success || !json.data) throw new Error();
 
-      // Photo
+      const a = json.data;
+
+      // title
+      document.title = `${a.AnimalName} — สวนสัตว์เขาไม่รัก`;
+      document.getElementById('breadcrumb-name').textContent = a.AnimalName;
+
+      // zone
+      document.getElementById('zone-label').textContent = a.ZoneName || 'ไม่ระบุโซน';
+
+      // 🔥 รูป (สำคัญ)
       const img = document.getElementById('animal-img');
-      img.src = animal.image || animal.cardImage;
-      img.alt = animal.nameTH;
+      img.src = `images/animals/${a.AnimalID}.png`;
+      img.alt = a.AnimalName;
 
-      // Name below photo (Figma format: "ชื่อ : น้องโต")
-      document.getElementById('animal-name-display').textContent    = `ชื่อ : ${animal.nameTH}`;
-      document.getElementById('animal-species-display').textContent = `ชื่อสายพันธุ์ : ${animal.speciesTH}`;
+      // name
+      document.getElementById('animal-name-display').textContent = `ชื่อ : ${a.AnimalName}`;
+      // Fix: /api/animals/:id now joins Species, but keep a fallback so "undefined" never appears.
+      const speciesName = a.SpeciesName || a.ScientificName || '-';
+      document.getElementById('animal-species-display').textContent = `ชื่อสายพันธุ์ : ${speciesName}`;
 
-      // Info rows with green divider lines after each
+      // info
       const infoData = [
-        { label: 'เพศ',        value: animal.gender },
-        { label: 'อายุ',       value: animal.ageDisplay, bold: true },
-        { label: 'ถิ่นกำเนิด', value: animal.origin },
-        { label: 'รหัสกรง',   value: animal.cageCode, bold: true },
+        { label: 'เพศ', value: a.Gender },
+        { label: 'รหัสกรง', value: a.EnclosureID }
       ];
 
       document.getElementById('animal-info-rows').innerHTML = infoData.map(r => `
         <div class="animal-info-item">
           <div class="animal-info-text">
-            ${r.label}: ${r.bold ? `<strong>${r.value}</strong>` : r.value}
+            ${r.label}: <strong>${r.value || '-'}</strong>
           </div>
           <div class="animal-info-divider"></div>
         </div>
       `).join('');
 
-      // Nearby animals
-      const nearby = MOCK_ANIMALS.filter(a => a.zoneId === animal.zoneId && a.id !== animal.id).slice(0, 3);
-      if (nearby.length > 0) {
-        const nearbySection = document.getElementById('nearby-section');
-        nearbySection.style.display = 'block';
-        document.getElementById('nearby-title').textContent = `สัตว์อื่นใน ${zone ? zone.name : animal.zone}`;
-        document.getElementById('nearby-grid').innerHTML = nearby.map(a => `
-          <a href="animal-detail.html?id=${a.id}" class="nearby-card">
-            <img
-              src="${a.cardImage}"
-              alt="${a.nameTH}"
-              onerror="this.src='https://placehold.co/400x160/F3F4F6/9CA3AF?text=🐾'"
-            >
-            <div class="nearby-card-body">
-              <div class="nearby-name">${a.nameTH}</div>
-              <div class="nearby-species">${a.speciesTH}</div>
-            </div>
-          </a>
-        `).join('');
-      }
+    } catch (err) {
+      document.getElementById('not-found').style.display = 'block';
+      document.getElementById('animal-detail').style.display = 'none';
     }
-  </script>
+  }
+
+  loadAnimalDetail();
+</script>
 </body>
 </html>

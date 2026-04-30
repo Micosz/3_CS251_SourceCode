@@ -90,14 +90,32 @@
     </div>
   </main>
 
-  <script src="js/mockData.js"></script>
+ <script src="js/layout.js"></script>
   <script src="js/cart.js"></script>
   <script src="js/auth.js"></script>
-  <script>
+ <script>
     initNavbar('');
     initFooter();
     initToaster();
 
+    // ================= HELPER =================
+    function getDisplayName(item) {
+      return item.nameTH || item.type || 'ไม่ระบุชื่อ';
+    }
+
+    function getIcon(item) {
+      if (item.icon) return item.icon;
+      if (item.image) {
+        return `<img src="${item.image}" style="width:40px;height:40px;object-fit:contain;" onerror="this.src='images/default.png'">`;
+      }
+      return '🎟️';
+    }
+
+    function formatPrice(price) {
+      return `฿${Number(price).toLocaleString()}`;
+    }
+
+    // ================= RENDER =================
     function renderCart() {
       const items = CART.getItems();
       const isEmpty = CART.isEmpty();
@@ -106,35 +124,54 @@
       document.getElementById('cart-content').style.display = isEmpty ? 'none'  : 'grid';
       if (isEmpty) return;
 
-      // Render items
       const container = document.getElementById('cart-items');
+
       container.innerHTML = items.map(item => `
         <div class="cart-item" data-id="${item.id}">
-          <div class="cart-item-icon">${item.icon}</div>
+          
+          <div class="cart-item-icon">
+            ${getIcon(item)}
+          </div>
+
           <div class="cart-item-info">
-            <div class="cart-item-name">${item.nameTH}</div>
-            <div class="cart-item-unit">${item.isFree ? 'ฟรี' : `฿${item.price} × ${item.qty}`}</div>
+            <div class="cart-item-name">
+              ${getDisplayName(item)}
+            </div>
+            <div class="cart-item-unit">
+              ${item.isFree ? 'ฟรี' : `${formatPrice(item.price)} × ${item.qty}`}
+            </div>
           </div>
+
           <div class="cart-item-qty">
-            <button class="qty-btn" onclick="updateItemQty('${item.id}', ${item.qty - 1})" ${item.qty <= 1 ? 'disabled':''}>−</button>
+            <button class="qty-btn" 
+              onclick="updateItemQty('${String(item.id).replace(/'/g, "\\'")}', ${item.qty - 1})" 
+              ${item.qty <= 1 ? 'disabled' : ''}>−</button>
+
             <span class="qty-display">${item.qty}</span>
-            <button class="qty-btn" onclick="updateItemQty('${item.id}', ${item.qty + 1})">+</button>
+
+            <button class="qty-btn" 
+              onclick="updateItemQty('${String(item.id).replace(/'/g, "\\'")}', ${item.qty + 1})">+</button>
           </div>
+
           <div class="cart-item-subtotal">
-            ${item.isFree ? 'ฟรี' : `฿${(item.price * item.qty).toLocaleString()}`}
+            ${item.isFree ? 'ฟรี' : formatPrice(item.price * item.qty)}
           </div>
-          <button class="cart-remove-btn" onclick="removeItem('${item.id}')" title="ลบออก">🗑️</button>
+
+          <button class="cart-remove-btn" 
+            onclick="removeItem('${String(item.id).replace(/'/g, "\\'")}')" 
+            title="ลบออก">🗑️</button>
         </div>
       `).join('');
 
-      // Render summary
+      // ================= SUMMARY =================
       const summaryEl = document.getElementById('summary-rows');
       const promo = CART.getPromo();
       const discount = CART.getDiscount();
+
       let summaryHTML = items.map(i => `
         <div class="summary-row">
-          <span>${i.type} ×${i.qty}</span>
-          <span>${i.isFree ? 'ฟรี' : `฿${(i.price * i.qty).toLocaleString()}`}</span>
+          <span>${i.type || getDisplayName(i)} ×${i.qty}</span>
+          <span>${i.isFree ? 'ฟรี' : formatPrice(i.price * i.qty)}</span>
         </div>
       `).join('');
 
@@ -142,17 +179,21 @@
         summaryHTML += `
           <div class="summary-row discount">
             <span style="font-size:0.82rem;">ส่วนลด: ${promo.code}</span>
-            <span>−฿${discount}</span>
+            <span>−${formatPrice(discount)}</span>
           </div>
         `;
       }
-      summaryEl.innerHTML = summaryHTML;
-      document.getElementById('total-amount').textContent = `฿${CART.getTotal().toLocaleString()}`;
 
-      // Show/hide promo applied
+      summaryEl.innerHTML = summaryHTML;
+
+      document.getElementById('total-amount').textContent =
+        formatPrice(CART.getTotal());
+
+      // ================= PROMO =================
       if (promo) {
         document.getElementById('promo-applied').style.display = 'flex';
-        document.getElementById('promo-applied-text').textContent = `${promo.code}: ลด ฿${promo.discountAmount}`;
+        document.getElementById('promo-applied-text').textContent =
+          `${promo.code}: ลด ${formatPrice(promo.discountAmount)}`;
         document.getElementById('promo-input').value = promo.code;
         document.getElementById('promo-msg').style.display = 'none';
       } else {
@@ -161,35 +202,60 @@
       }
     }
 
+    // ================= UPDATE QTY =================
     function updateItemQty(id, newQty) {
+      id = String(id); // 🔥 FIX สำคัญมาก
+
       if (newQty <= 0) {
         CART.removeItem(id);
       } else {
         CART.setQty(id, newQty);
       }
+
       renderCart();
     }
 
+    // ================= REMOVE =================
     function removeItem(id) {
+      id = String(id); // 🔥 FIX สำคัญ
+
       CART.removeItem(id);
       showToast('ลบรายการออกจากตะกร้าแล้ว', 'info');
       renderCart();
     }
 
-    function applyPromoCode() {
+    // ================= PROMO =================
+    async function applyPromoCode() {
       const code = document.getElementById('promo-input').value.trim();
       if (!code) return;
+
       const msgEl = document.getElementById('promo-msg');
-      const result = CART.applyPromo(code);
+      const btn = document.getElementById('promo-btn');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'กำลังตรวจ...';
+      }
+
+      // Fix: validate the code against the Promotion table through the API.
+      const result = await CART.applyPromo(code);
+
       msgEl.style.display = 'block';
+
       if (result.valid) {
         msgEl.style.color = 'var(--primary)';
-        msgEl.textContent = `✅ ${result.message} (ลด ฿${result.discountAmount})`;
+        msgEl.textContent = `✅ ${result.message} (ลด ${formatPrice(result.discountAmount)})`;
         showToast('ใช้รหัสส่วนลดสำเร็จ!', 'success');
       } else {
         msgEl.style.color = 'var(--danger)';
         msgEl.textContent = `❌ ${result.message}`;
       }
+
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'ใช้โค้ด';
+      }
+
       renderCart();
     }
 
@@ -200,14 +266,18 @@
       renderCart();
     }
 
-    // Allow Enter key on promo input
+    // ================= ENTER KEY =================
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('promo-input')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') applyPromoCode();
       });
     });
 
+    // Re-render when CART changes from another shared helper.
+    window.addEventListener('cart:changed', renderCart);
+
+    // ================= START =================
     renderCart();
-  </script>
+</script>
 </body>
 </html>
