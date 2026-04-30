@@ -8,21 +8,50 @@ router.get('/', async (req, res) => {
     const [rows] = await pool.query(`
       SELECT 
         t.TicketID,
+        t.VisitorID,
         t.TicketType,
         DATE_FORMAT(t.VisitDate, '%Y-%m-%d') AS VisitDate,
         t.Price,
         DATE_FORMAT(t.PurchaseDate, '%Y-%m-%d %H:%i:%s') AS PurchaseDate,
         v.VisitorFName,
         v.VisitorLName,
+        p.PromotionID,
         p.PromotionCode
       FROM Ticket t
       LEFT JOIN Visitor v ON t.VisitorID = v.VisitorID
       LEFT JOIN Promotion p ON t.PromotionID = p.PromotionID
-      ORDER BY t.PurchaseDate DESC
+      ORDER BY t.VisitorID DESC, t.TicketID ASC
     `);
 
     res.json({ success: true, data: rows });
 
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ================= GET BY VISITOR ID =================
+router.get('/visitor/:visitorId', async (req, res) => {
+  try {
+    const { visitorId } = req.params;
+    const [rows] = await pool.query(`
+      SELECT 
+        t.TicketID,
+        t.VisitorID,
+        t.TicketType,
+        DATE_FORMAT(t.VisitDate, '%Y-%m-%d') AS VisitDate,
+        t.Price,
+        t.PurchaseChannel,
+        DATE_FORMAT(t.PurchaseDate, '%Y-%m-%d %H:%i:%s') AS PurchaseDate,
+        p.PromotionCode
+      FROM Ticket t
+      LEFT JOIN Promotion p ON t.PromotionID = p.PromotionID
+      WHERE t.VisitorID = ?
+      ORDER BY t.PurchaseDate DESC
+    `, [visitorId]);
+
+    res.json({ success: true, data: rows });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: err.message });

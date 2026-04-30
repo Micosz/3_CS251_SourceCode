@@ -208,47 +208,16 @@
     initFooter();
     initToaster();
 
-    let ALL_TICKETS = [];
-
+    let ALL_TICKETS = [
+      { id: 'adult', type: 'Adult', price: 200, isFree: false, ageRange: 'ผู้ใหญ่ (18+)', image: 'images/tickets/Adult.png' },
+      { id: 'child', type: 'Child', price: 100, isFree: false, ageRange: 'เด็ก (ต่ำกว่า 12 ปี)', image: 'images/tickets/Child.png' },
+      { id: 'infant', type: 'Infant', price: 0, isFree: true, ageRange: 'ทารก (ต่ำกว่า 3 ปี)', image: 'images/tickets/Infant.png' }
+    ];
+    
     // ================= LOAD FROM API =================
     async function loadTickets() {
-      try {
-        const res = await fetch('/api/tickets');
-        const json = await res.json();
-
-        if (!json.success) throw new Error('โหลด ticket ไม่สำเร็จ');
-
-        // 🔥 map จาก API → UI
-        ALL_TICKETS = json.data.map((t, index) => ({
-          id: t.TicketID || index + 1,
-          type: t.TicketType,
-          price: parseFloat(t.Price) || 0,
-          isFree: parseFloat(t.Price) === 0,
-          ageRange: getAgeLabel(t.TicketType),
-          image: `images/tickets/${t.TicketType}.png`
-        }));
-
-        renderTicketCards();
-
-      } catch (err) {
-        console.error(err);
-        document.getElementById('ticket-cards').innerHTML = `
-          <div class="empty-state">
-            <h3>โหลดข้อมูลบัตรไม่สำเร็จ</h3>
-          </div>
-        `;
-      }
-    }
-
-    // ================= HELPER =================
-    function getAgeLabel(type) {
-      const ticketType = String(type || '').toLowerCase();
-
-      if (ticketType === 'adult') return 'ผู้ใหญ่ (18+)';
-      if (ticketType === 'student') return 'นักเรียน / นักศึกษา';
-      if (ticketType === 'child') return 'เด็ก (ต่ำกว่า 12 ปี)';
-      if (ticketType === 'infant') return 'ทารก (ต่ำกว่า 3 ปี)';
-      return '-';
+      // ไม่โหลดจาก DB แล้วเพราะไม่มีตารางสินค้า ใช้ Hardcode แทนตามที่แจ้ง
+      renderTicketCards();
     }
 
     // ================= RENDER =================
@@ -279,7 +248,7 @@
 
             <button
               class="btn-buy-ticket ${isAdded ? 'added' : ''}"
-              onclick="addToCart(${t.id})"
+              onclick="addToCart('${t.id}')"
             >
               ${isAdded ? `✓ เพิ่มแล้ว (${qty})` : 'ซื้อบัตรเข้าชม'}
             </button>

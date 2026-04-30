@@ -205,42 +205,38 @@
       return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
     }
 
-    // ================= GET HISTORY (🔥 FIX หลัก) =================
-    function getUserTicketHistory(userId) {
-      const history = JSON.parse(localStorage.getItem('ticket_history') || '[]');
+    // ================= LOAD =================
+    async function loadHistory() {
+      try {
+        const res = await fetch(`/api/tickets/visitor/${user.visitorId}`);
+        const result = await res.json();
 
-      return history
-        .filter(h => String(h.userId) === String(userId))
-        .map((h, index) => ({
-          id: 'TKT-' + (index + 1),
-          date: h.date,
-          type: h.items.map(i => i.type).join(', '),
-          total: h.total,
-          items: h.items,
-          discount: h.discount || 0,
-          promo: h.promoCode || '',
-          paymentMethod: h.method
-        }))
-        .reverse(); // ล่าสุดก่อน
+        if (result.success) {
+          renderHistory(result.data);
+        } else {
+          showToast('ไม่สามารถโหลดประวัติได้', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+      }
     }
 
-    // ================= LOAD =================
-    const history = getUserTicketHistory(user.id);
+    function renderHistory(history) {
+      if (!history || history.length === 0) {
+        document.getElementById('history-empty').style.display = 'block';
+        document.getElementById('history-table').style.display = 'none';
+        return;
+      }
 
-    if (!history || history.length === 0) {
-      document.getElementById('history-empty').style.display = 'block';
-      document.getElementById('history-table').style.display = 'none';
-    } else {
       const tbody = document.getElementById('history-tbody');
-
       tbody.innerHTML = history.map(t => `
         <tr>
-          <td class="ticket-id">#${t.id.replace('TKT-','')}</td>
-          <td class="ticket-date">${formatDate(t.date)}</td>
-          <td class="ticket-type">${t.type}</td>
-          <td class="ticket-price">฿${t.total}</td>
+          <td class="ticket-id">#${t.TicketID}</td>
+          <td class="ticket-date">${formatDate(t.PurchaseDate)}</td>
+          <td class="ticket-type">${t.TicketType}</td>
+          <td class="ticket-price">฿${t.Price}</td>
           <td style="text-align:right;">
-            <button class="btn-detail" onclick="showDetail('${t.id}')">
+            <button class="btn-detail" onclick="showDetail(${t.TicketID})">
               ดูรายละเอียด
             </button>
           </td>
@@ -249,49 +245,41 @@
     }
 
     // ================= DETAIL =================
-    function showDetail(ticketId) {
-      const history = getUserTicketHistory(user.id);
-      const ticket = history.find(t => t.id === ticketId);
+    async function showDetail(ticketId) {
+      try {
+        const res = await fetch(`/api/tickets/${ticketId}`);
+        const result = await res.json();
+        if (!result.success) return;
 
-      if (!ticket) return;
+        const t = result.data;
+        const rows = `
+          <div class="detail-row">
+            <span class="detail-label">หมายเลขตั๋ว</span>
+            <span class="detail-value">#${t.TicketID}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">ประเภทบัตร</span>
+            <span class="detail-value">${t.TicketType}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">ราคา</span>
+            <span class="detail-value">฿${t.Price}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">วันที่เข้าชม</span>
+            <span class="detail-value">${formatDate(t.VisitDate)}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">วันที่ซื้อ</span>
+            <span class="detail-value">${formatDate(t.PurchaseDate)}</span>
+          </div>
+        `;
 
-      const itemRows = ticket.items.map(i => `
-        <div class="detail-row">
-          <span class="detail-label">${i.type} x${i.qty}</span>
-          <span class="detail-value">
-            ${i.isFree ? 'ฟรี' : '฿' + (i.price * i.qty)}
-          </span>
-        </div>
-      `).join('');
-
-      const rows = `
-        ${itemRows}
-
-        <div class="detail-row">
-          <span class="detail-label">ส่วนลด</span>
-          <span class="detail-value">
-            ${ticket.discount > 0 ? `฿${ticket.discount} (${ticket.promo})` : 'ไม่มี'}
-          </span>
-        </div>
-
-        <div class="detail-row">
-          <span class="detail-label">ยอดรวม</span>
-          <span class="detail-value"><strong>฿${ticket.total}</strong></span>
-        </div>
-
-        <div class="detail-row">
-          <span class="detail-label">วิธีชำระเงิน</span>
-          <span class="detail-value">${ticket.paymentMethod}</span>
-        </div>
-
-        <div class="detail-row">
-          <span class="detail-label">วันที่ซื้อ</span>
-          <span class="detail-value">${formatDate(ticket.date)}</span>
-        </div>
-      `;
-
-      document.getElementById('detail-content').innerHTML = rows;
-      document.getElementById('detail-modal').classList.add('active');
+        document.getElementById('detail-content').innerHTML = rows;
+        document.getElementById('detail-modal').classList.add('active');
+      } catch (err) {
+        console.error(err);
+      }
     }
 
     function closeDetailModal() {
@@ -302,6 +290,9 @@
     document.getElementById('detail-modal').addEventListener('click', function(e) {
       if (e.target === this) closeDetailModal();
     });
+
+    // ================= START =================
+    loadHistory();
 </script>
 </body>
 </html>

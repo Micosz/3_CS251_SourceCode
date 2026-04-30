@@ -180,5 +180,23 @@ router.post('/register', async (req, res) => {
   }
 });
 
+router.get('/users', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT UserID, Username, Role, AccountStatus, CreatedAt
+      FROM UserAccount
+      ORDER BY UserID ASC
+    `);
+
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error('Get users error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'System error while loading users.'
+    });
+  }
+});
+
 module.exports = router;
 

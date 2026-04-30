@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,13 +8,20 @@
   <link rel="stylesheet" href="../css/admin.css">
   <style>
     /* Inline editing style */
-    .edit-mode .display-val { display: none; }
-    .display-mode .edit-ctrls { display: none; }
+    .edit-mode .display-val {
+      display: none;
+    }
+
+    .display-mode .edit-ctrls {
+      display: none;
+    }
+
     .edit-ctrls {
       display: flex;
       align-items: center;
       gap: 1.25rem;
     }
+
     .qty-display {
       font-weight: 500;
       min-width: 20px;
@@ -21,6 +29,7 @@
     }
   </style>
 </head>
+
 <body class="admin-body">
 
   <main class="admin-main">
@@ -32,118 +41,132 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th>UserID</th>
+            <th>VisitorID</th>
             <th>TicketID</th>
-            <th>สถานะ</th>
+            <th>ประเภทตั๋ว</th>
             <th>Promocode</th>
-            <th>จำนวน</th>
+            <th>วันที่เข้าชม</th>
             <th style="text-align:right;">การจัดการ</th>
           </tr>
         </thead>
-        <tbody id="ticket-list">
-          <!-- Injected by JS -->
+        <tbody id="ticketTableBody">
+          <tr>
+            <td colspan="6" style="text-align:center; padding:2rem;">กำลังโหลดข้อมูล...</td>
+          </tr>
         </tbody>
       </table>
     </div>
   </main>
 
-  <script src="../js/mockData.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/admin.js"></script>
   <script>
     initAdminLayout('tickets');
 
-    let historyTable = [];
+    let ticketsData = [];
+
+    document.addEventListener('DOMContentLoaded', fetchTickets);
+
+    async function fetchTickets() {
+      try {
+        const res = await fetch('/api/tickets');
+        const result = await res.json();
+        if (result.success) {
+          ticketsData = result.data;
+          renderTickets();
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('ticketTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center;">โหลดข้อมูลไม่สำเร็จ</td></tr>';
+      }
+    }
 
     function renderTickets() {
-      const tbody = document.getElementById('ticket-list');
-      // For admin demo, we display all history
-      // Usually would come from a global admin view of all users
-      // Here we simulate by showing current user's history or mock data
-      const users = getAllUsers();
-      let allHistory = [];
-      users.forEach(u => {
-        const uHistory = getTicketHistory(u.id);
-        uHistory.forEach(t => allHistory.push({ ...t, userId: u.id }));
+      const tbody = document.getElementById('ticketTableBody');
+      if (ticketsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">ไม่มีข้อมูลตั๋วในระบบ</td></tr>';
+        return;
+      }
+
+      let html = '';
+      let lastVisitorId = null;
+
+      ticketsData.forEach((t, idx) => {
+        // Add a group header if VisitorID changes
+        if (t.VisitorID !== lastVisitorId) {
+            html += `
+                <tr style="background: #f1f5f9; border-top: 2px solid #cbd5e0;">
+                    <td colspan="6" style="padding: 0.5rem 1.5rem; font-weight: bold; color: #475569; font-size: 0.85rem;">
+                        👤 ผู้เข้าชม: ${t.VisitorFName ? t.VisitorFName + ' ' + t.VisitorLName : 'Visitor #' + t.VisitorID}
+                    </td>
+                </tr>
+            `;
+            lastVisitorId = t.VisitorID;
+        }
+
+        html += `
+            <tr>
+              <td>#${t.VisitorID || '-'}</td>
+              <td style="font-weight:bold;">#${t.TicketID}</td>
+              <td><span style="color:#2d6a4f; font-weight:bold;">${t.TicketType}</span></td>
+              <td>${t.PromotionCode || '-'}</td>
+              <td>${t.VisitDate}</td>
+              <td style="text-align:right;">
+                <div class="action-btns">
+                  <button class="btn-edit" onclick="duplicateTicket(${idx})" title="เพิ่มตั๋วใบใหม่สำหรับ User นี้">เพิ่ม +</button>
+                  <button class="btn-cancel" onclick="deleteTicket(${t.TicketID})" title="ลบตั๋วใบนี้">ลบ 🗑️</button>
+                </div>
+              </td>
+            </tr>
+        `;
       });
 
-      // If empty, add a dummy one like in screenshot
-      if (allHistory.length === 0) {
-        allHistory.push({
-          id: '555555',
-          userId: '111111',
-          status: 'ยังไม่ใช้',
-          promo: '3sale',
-          quantity: 3
-        });
-      }
-
-      historyTable = allHistory;
-
-      tbody.innerHTML = allHistory.map((t, idx) => `
-        <tr id="row-${idx}" class="display-mode">
-          <td>#${t.userId.toString().slice(-6)}</td>
-          <td>#${t.id.slice(-6)}</td>
-          <td>${t.status || 'ยังไม่ใช้'}</td>
-          <td>${t.promo || '-'}</td>
-          <td>
-            <span class="display-val">${t.quantity}</span>
-            <div class="edit-ctrls">
-                <button class="qty-btn" onclick="updateLocalQty(${idx}, -1)">−</button>
-                <span class="qty-display" id="qty-${idx}">${t.quantity}</span>
-                <button class="qty-btn" onclick="updateLocalQty(${idx}, 1)">+</button>
-            </div>
-          </td>
-          <td style="text-align:right;">
-            <div class="action-btns display-val">
-              <button class="btn-edit" onclick="enterEditMode(${idx})">แก้ไข 📝</button>
-              <button class="btn-cancel" onclick="deleteTicket(${idx})">ยกเลิก ✕</button>
-            </div>
-            <div class="action-btns edit-ctrls">
-              <button class="btn-confirm" onclick="saveEdit(${idx})">ยืนยัน</button>
-            </div>
-          </td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = html;
     }
 
-    function enterEditMode(idx) {
-      document.getElementById(`row-${idx}`).className = 'edit-mode';
+    async function duplicateTicket(idx) {
+        const ticket = ticketsData[idx];
+        if (confirm(`ต้องการเพิ่มตั๋วประเภท ${ticket.TicketType} ให้กับ Visitor #${ticket.VisitorID} อีก 1 ใบ ใช่หรือไม่?`)) {
+            try {
+                const res = await fetch('/api/tickets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        visitorId: ticket.VisitorID,
+                        promotionId: ticket.PromotionID,
+                        ticketType: ticket.TicketType,
+                        visitDate: ticket.VisitDate,
+                        price: ticket.Price
+                    })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert('เพิ่มตั๋วใบใหม่เรียบร้อย');
+                    fetchTickets();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (err) {
+                alert('เกิดข้อผิดพลาดในการสร้างตั๋วเพิ่ม');
+            }
+        }
     }
 
-    function updateLocalQty(idx, delta) {
-      const qtyEl = document.getElementById(`qty-${idx}`);
-      let current = parseInt(qtyEl.textContent);
-      current = Math.max(1, current + delta);
-      qtyEl.textContent = current;
+    async function deleteTicket(ticketId) {
+        if (confirm('ยืนยันการลบตั๋วใบนี้ใช่หรือไม่?')) {
+            try {
+                const res = await fetch(`/api/tickets/${ticketId}`, { method: 'DELETE' });
+                const result = await res.json();
+                if (result.success) {
+                    alert('ลบตั๋วเรียบร้อย');
+                    fetchTickets();
+                }
+            } catch (err) {
+                alert('เกิดข้อผิดพลาดในการลบ');
+            }
+        }
     }
-
-    function saveEdit(idx) {
-      const newQty = parseInt(document.getElementById(`qty-${idx}`).textContent);
-      const ticket = historyTable[idx];
-      
-      // Update in data store (mock)
-      const uHistory = getTicketHistory(ticket.userId);
-      const target = uHistory.find(h => h.id === ticket.id);
-      if (target) {
-        target.quantity = newQty;
-        // In real app, save to localStorage/DB
-      }
-
-      document.getElementById(`row-${idx}`).className = 'display-mode';
-      renderTickets();
-    }
-
-    function deleteTicket(idx) {
-      if (confirm('คุณแน่ใจหรือไม่ที่จะยกเลิกตั๋วนี้?')) {
-        const ticket = historyTable[idx];
-        // In mock, we just remove from local array for demo
-        historyTable.splice(idx, 1);
-        renderTickets();
-      }
-    }
-
-    renderTickets();
   </script>
 </body>
+
 </html>

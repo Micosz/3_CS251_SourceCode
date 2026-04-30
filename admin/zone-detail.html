@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>รายละเอียดโซน — Admin</title>
   <link rel="stylesheet" href="../css/admin.css">
 </head>
+
 <body class="admin-body">
 
   <main class="admin-main">
@@ -28,39 +30,54 @@
           </tr>
         </thead>
         <tbody id="species-list">
-          <!-- Injected by JS -->
+          <tr>
+            <td colspan="5" style="text-align:center; padding:2rem;">กำลังโหลดข้อมูล...</td>
+          </tr>
         </tbody>
       </table>
     </div>
   </main>
 
-  <script src="../js/mockData.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/admin.js"></script>
   <script>
-    initAdminLayout('animals');
+    document.addEventListener('DOMContentLoaded', () => {
+      initAdminLayout('animals');
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const zid = urlParams.get('id');
-    document.getElementById('zone-title').textContent = `ZONE ${zid || '1'}`;
+      const urlParams = new URLSearchParams(window.location.search);
+      const zid = urlParams.get('id') || '1';
+      document.getElementById('zone-title').textContent = `ZONE ${zid}`;
 
-    const mockSpecies = [
-      { cage: '#1', speciesId: '#11', name: 'ฮิปโปโปเตมัส', count: 10 },
-      { cage: '#2', speciesId: '#12', name: 'คาปิบาร่า', count: 15 },
-      { cage: '#3', speciesId: '#13', name: 'เพนกวิน', count: 20 }
-    ];
+      fetchSpeciesInZone(zid);
+    });
 
-    document.getElementById('species-list').innerHTML = mockSpecies.map(s => `
-      <tr>
-        <td>${s.cage}</td>
-        <td>${s.speciesId}</td>
-        <td>${s.name}</td>
-        <td>${s.count}</td>
-        <td style="text-align:right;">
-          <a href="species-detail.html?id=${s.speciesId.replace('#','')}" class="btn-edit" style="text-decoration:none; display:inline-flex;">เพิ่มเติม</a>
-        </td>
-      </tr>
-    `).join('');
+    async function fetchSpeciesInZone(zoneId) {
+      try {
+        const res = await fetch(`/api/zones/${zoneId}/species`);
+        const result = await res.json();
+
+        const tbody = document.getElementById('species-list');
+        if (result.success && result.data.length > 0) {
+          tbody.innerHTML = result.data.map(s => `
+            <tr>
+              <td>กรงที่ ${s.EnclosureID}</td>
+              <td>#${s.SpeciesID}</td>
+              <td style="font-weight:bold;">${s.SpeciesName}</td>
+              <td>${s.AnimalCount} ตัว</td>
+              <td style="text-align:right;">
+                <a href="species-detail.html?speciesId=${s.SpeciesID}&cageId=${s.EnclosureID}&zoneId=${zoneId}" class="btn-edit" style="text-decoration:none; display:inline-flex;">จัดการข้อมูลสัตว์</a>
+              </td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">ไม่พบข้อมูลสัตว์ในโซนนี้</td></tr>';
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('species-list').innerHTML = '<tr><td colspan="5" style="text-align:center;">ข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+      }
+    }
   </script>
 </body>
+
 </html>
