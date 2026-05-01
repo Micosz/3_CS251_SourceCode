@@ -171,6 +171,16 @@
             </div>
           </div>
         </div>
+
+        <div class="event-detail-panel" id="event-detail-panel" hidden>
+          <div class="event-detail-eyebrow">รายละเอียดรอบการแสดง</div>
+          <h3 id="event-detail-name">เลือกรายการแสดง</h3>
+          <div class="event-detail-meta">
+            <span id="event-detail-date">-</span>
+            <span id="event-detail-time">-</span>
+          </div>
+          <p id="event-detail-text">คลิกชื่อรายการแสดงเพื่อดูรายละเอียด</p>
+        </div>
       </div>
     </div>
   </section>
@@ -343,14 +353,87 @@
         .map(event => `
           <div class="schedule-item">
             <span class="schedule-time">${formatEventTime(event.EventTime)} น.</span>
-            <span class="schedule-name">${event.EventName}</span>
+            <button class="schedule-name schedule-name-btn" type="button" data-event-id="${event.EventID}">
+              ${escapeHTML(event.EventName)}
+            </button>
           </div>
         `)
         .join('');
     }
 
+    document.addEventListener('click', async function (event) {
+      const button = event.target.closest('.schedule-name-btn');
+      if (!button) return;
+
+      const eventId = button.dataset.eventId;
+      if (!eventId) return;
+
+      document.querySelectorAll('.schedule-name-btn').forEach(btn => {
+        btn.classList.toggle('is-active', btn === button);
+      });
+
+      showEventDetailLoading();
+
+      try {
+        const res = await fetch(`/api/events/${eventId}`);
+        const json = await res.json();
+
+        if (!json.success) throw new Error(json.message || 'Load event detail failed');
+
+        renderEventDetail(json.data);
+      } catch (err) {
+        console.error(err);
+        renderEventDetailError();
+      }
+    });
+
+    function showEventDetailLoading() {
+      const panel = document.getElementById('event-detail-panel');
+      if (!panel) return;
+
+      panel.hidden = false;
+      document.getElementById('event-detail-name').textContent = 'กำลังโหลดข้อมูล...';
+      document.getElementById('event-detail-date').textContent = '-';
+      document.getElementById('event-detail-time').textContent = '-';
+      document.getElementById('event-detail-text').textContent = 'โปรดรอสักครู่';
+    }
+
+    function renderEventDetail(event) {
+      const panel = document.getElementById('event-detail-panel');
+      if (!panel || !event) return;
+
+      panel.hidden = false;
+      document.getElementById('event-detail-name').textContent = event.EventName || '-';
+      document.getElementById('event-detail-date').textContent = formatEventDate(event.EventDate);
+      document.getElementById('event-detail-time').textContent = `${formatEventTime(event.EventTime)} น.`;
+      document.getElementById('event-detail-text').textContent = event.EventDetail || 'ไม่มีรายละเอียดเพิ่มเติม';
+    }
+
+    function renderEventDetailError() {
+      const panel = document.getElementById('event-detail-panel');
+      if (!panel) return;
+
+      panel.hidden = false;
+      document.getElementById('event-detail-name').textContent = 'โหลดรายละเอียดไม่สำเร็จ';
+      document.getElementById('event-detail-date').textContent = '-';
+      document.getElementById('event-detail-time').textContent = '-';
+      document.getElementById('event-detail-text').textContent = 'กรุณาลองกดรายการอีกครั้ง';
+    }
+
     function formatEventTime(time) {
       return String(time || '').slice(0, 5);
+    }
+
+    function formatEventDate(date) {
+      if (!date) return '-';
+      const d = new Date(date + 'T00:00:00');
+      if (Number.isNaN(d.getTime())) return date;
+      return d.toLocaleDateString('th-TH', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
     }
 
     function formatScheduleHeader(date, fallback) {
@@ -362,6 +445,16 @@
         day: 'numeric',
         month: 'short'
       });
+    }
+
+    function escapeHTML(value) {
+      return String(value || '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
     }
 
     loadShowSchedules();
