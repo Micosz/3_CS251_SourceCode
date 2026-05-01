@@ -112,8 +112,8 @@
       }
 
       window.location.href = window.location.pathname.includes('/admin/')
-        ? '../login.html'
-        : 'login.html';
+        ? '../index.html'
+        : 'index.html';
     },
 
     requireAuth() {

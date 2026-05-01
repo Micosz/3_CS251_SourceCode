@@ -239,6 +239,7 @@
     initNavbar('history');
 
     const TICKET_HISTORY_KEY = 'zoo_ticket_history';
+    let currentHistory = [];
 
     // ================= FORMAT DATE =================
     function formatDate(iso) {
@@ -248,13 +249,53 @@
       return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
     }
 
+    function formatDateTime(iso) {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return '-';
+      return `${formatDate(iso)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
     // ================= LOAD =================
-    function loadHistory() {
-      const history = normalizeTicketHistory(getLocalTicketHistory()).filter(t => {
+    async function loadHistory() {
+      let history = normalizeTicketHistory(getLocalTicketHistory()).filter(t => {
         return isHistoryOwner(t);
       });
 
+      if (!history.length && user?.visitorId) {
+        try {
+          const res = await fetch(`/api/tickets/visitor/${user.visitorId}`);
+          const result = await res.json();
+          if (res.ok && result.success && Array.isArray(result.data)) {
+            history = result.data.map(ticket => normalizeServerTicket(ticket));
+          }
+        } catch (err) {
+          console.error('Ticket history API error:', err);
+        }
+      }
+
+      currentHistory = history;
       renderHistory(history);
+    }
+
+    function normalizeServerTicket(ticket) {
+      const price = Number(ticket.Price) || 0;
+      const purchaseTime = new Date(ticket.PurchaseDate || Date.now()).getTime();
+      const displayTime = Number.isNaN(purchaseTime) ? Date.now() : purchaseTime;
+      return {
+        TicketID: `L${displayTime}${String(ticket.TicketID).padStart(2, '0')}-1`,
+        DatabaseTicketID: ticket.TicketID,
+        VisitorID: ticket.VisitorID,
+        TicketType: ticket.TicketType,
+        Price: price,
+        UnitPrice: price,
+        LineTotal: price,
+        IsFree: price === 0,
+        PromotionCode: ticket.PromotionCode || null,
+        VisitDate: ticket.VisitDate,
+        PurchaseDate: ticket.PurchaseDate,
+        PaymentMethod: ticket.PurchaseChannel || '-',
+        Status: 'paid'
+      };
     }
 
     function getLocalHistoryUserId() {
@@ -316,12 +357,12 @@
     }
 
     function normalizeTicketHistory(history) {
-      const orders = [];
+      const tickets = [];
       const legacyGroups = {};
 
       history.forEach(ticket => {
         if (Array.isArray(ticket.Items)) {
-          orders.push(ticket);
+          tickets.push(...splitOrderIntoTickets(ticket));
           return;
         }
 
@@ -366,15 +407,56 @@
       });
 
       Object.values(legacyGroups).forEach(order => {
-        const total = Number.isFinite(Number(order.OrderTotal)) ? Number(order.OrderTotal) : order.Subtotal;
-        order.Price = total;
-        order.OrderTotal = total;
-        order.DiscountAmount = Math.max(0, order.Subtotal - total);
-        order.TicketType = order.Items.map(item => `${item.TicketType} x${item.Qty}`).join(', ');
-        orders.push(order);
+        tickets.push(...splitOrderIntoTickets(order));
       });
 
-      return orders;
+      return tickets;
+    }
+
+    function splitOrderIntoTickets(order) {
+      const databaseTicketIds = Array.isArray(order.TicketIDs) ? order.TicketIDs : [];
+      const displayBaseId = getDisplayTicketBaseId(order);
+      const rows = [];
+      let ticketIndex = 0;
+
+      getOrderItems(order).forEach(item => {
+        const qty = Number(item.Qty) || 1;
+        const unitPrice = Number(item.UnitPrice ?? item.Price ?? item.LineTotal) || 0;
+
+        for (let i = 0; i < qty; i += 1) {
+          const ticketId = `${displayBaseId}-${ticketIndex + 1}`;
+          rows.push({
+            ...order,
+            TicketID: ticketId,
+            DatabaseTicketID: databaseTicketIds[ticketIndex] || null,
+            TicketType: item.TicketType || order.TicketType,
+            Price: unitPrice,
+            UnitPrice: unitPrice,
+            LineTotal: unitPrice,
+            IsFree: !!item.IsFree || unitPrice === 0,
+            Items: [{
+              TicketType: item.TicketType || order.TicketType,
+              Qty: 1,
+              UnitPrice: unitPrice,
+              LineTotal: unitPrice,
+              IsFree: !!item.IsFree || unitPrice === 0
+            }],
+            OrderTotal: unitPrice,
+            DiscountAmount: 0
+          });
+          ticketIndex += 1;
+        }
+      });
+
+      return rows;
+    }
+
+    function getDisplayTicketBaseId(order) {
+      const currentId = String(order.TicketID || '');
+      if (currentId.startsWith('L')) return currentId.split('-')[0];
+      if (order.PaymentRef) return `L${String(order.PaymentRef).replace(/\D/g, '')}`;
+      const time = new Date(order.PurchaseDate || Date.now()).getTime();
+      return `L${Number.isNaN(time) ? Date.now() : time}`;
     }
 
     function renderHistory(history) {
@@ -392,8 +474,8 @@
         <tr>
           <td class="ticket-id">#${t.TicketID}</td>
           <td class="ticket-date">${formatDate(t.PurchaseDate)}</td>
-          <td class="ticket-type">${formatTicketSummary(t)}</td>
-          <td class="ticket-price">฿${t.Price}</td>
+          <td class="ticket-type">${t.TicketType}</td>
+          <td class="ticket-price">${Number(t.Price) === 0 ? 'ฟรี' : formatBaht(t.Price)}</td>
           <td style="text-align:right;">
             <button class="btn-detail" onclick="showDetail('${t.TicketID}')">
               ดูรายละเอียด
@@ -406,13 +488,13 @@
     // ================= DETAIL =================
     function showDetail(ticketId) {
       try {
-        const t = normalizeTicketHistory(getLocalTicketHistory())
+        const t = currentHistory
           .find(ticket => String(ticket.TicketID) === String(ticketId));
         if (!t) return;
 
         const itemRows = getOrderItems(t).map(item => `
           <div class="detail-row">
-            <span class="detail-label">Ticket ${item.TicketType} x${item.Qty}</span>
+            <span class="detail-label">Ticket ${item.TicketType}</span>
             <span class="detail-value">${item.IsFree ? 'ฟรี' : formatBaht(item.LineTotal)}</span>
           </div>
         `).join('');
@@ -430,18 +512,14 @@
             <span class="detail-value">#${t.TicketID}</span>
           </div>
           ${itemRows}
-          ${discountRow}
-          <div class="detail-row">
-            <span class="detail-label">รายการทั้งหมด</span>
-            <span class="detail-value">${formatBaht(t.OrderTotal ?? t.Price)}</span>
-          </div>
+          
           <div class="detail-row">
             <span class="detail-label">วันที่เข้าชม</span>
             <span class="detail-value">${formatDate(t.VisitDate)}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">วันที่ซื้อ</span>
-            <span class="detail-value">${formatDate(t.PurchaseDate)}</span>
+            <span class="detail-value">${formatDateTime(t.PurchaseDate)}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Payment Ref</span>

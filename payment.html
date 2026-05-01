@@ -532,7 +532,8 @@
         return;
       }
 
-      if (method === 'creditcard') {
+      // Mock checkout: do not validate or charge real card details.
+      if (false && method === 'creditcard') {
         const email = document.getElementById('cc-email').value.trim();
         const num   = document.getElementById('cc-number').value.replace(/\s/g,'');
         const exp   = document.getElementById('cc-exp').value;
@@ -558,6 +559,15 @@
 
           const paymentRef = document.getElementById('qr-ref')?.textContent || generatePaymentRef();
 
+          const createdTicketIds = await createTicketsFromCart({
+            items,
+            promo,
+            visitDate: today
+          }).catch(err => {
+            console.warn('Mock checkout could not save tickets to database:', err);
+            return [];
+          });
+
           saveLocalTicketHistory({
             items,
             method,
@@ -565,7 +575,8 @@
             ref: paymentRef,
             total,
             visitDate: today,
-            purchaseDate: new Date().toISOString()
+            purchaseDate: new Date().toISOString(),
+            ticketIds: createdTicketIds
           });
 
           CART.clear();
@@ -586,7 +597,7 @@
 
         } catch (err) {
           console.error(err);
-          showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+          showToast(err.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
         }
 
         if (btn) {
@@ -598,6 +609,86 @@
     }
 
     const TICKET_HISTORY_KEY = 'zoo_ticket_history';
+
+    async function createTicketsFromCart(order) {
+      const ticketIds = [];
+      const visitorId = await resolveCurrentVisitorId();
+      const promotionId = order.promo?.id || null;
+
+      for (const item of order.items) {
+        for (let i = 0; i < item.qty; i += 1) {
+          let result = await createTicketRequest({
+            visitorId,
+            promotionId,
+            ticketType: item.type,
+            visitDate: order.visitDate,
+            price: formatTicketPriceForApi(item)
+          });
+
+          if (!result.success && promotionId) {
+            result = await createTicketRequest({
+              visitorId,
+              promotionId: null,
+              ticketType: item.type,
+              visitDate: order.visitDate,
+              price: formatTicketPriceForApi(item)
+            });
+          }
+
+          if (!result.success) throw new Error(result.message || 'Cannot create ticket');
+
+          ticketIds.push(result.TicketID || result.id);
+        }
+      }
+
+      return ticketIds.filter(id => id !== null && id !== undefined);
+    }
+
+    async function createTicketRequest(payload) {
+      const res = await fetch('/api/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await res.json();
+      return {
+        ...result,
+        success: !!(res.ok && result.success),
+        message: result.message
+      };
+    }
+
+    async function resolveCurrentVisitorId() {
+      if (user?.visitorId) return user.visitorId;
+
+      const accountEmail = String(user?.email || user?.username || '').trim().toLowerCase();
+      if (!accountEmail) return null;
+
+      const res = await fetch('/api/visitors');
+      const result = await res.json();
+      if (!res.ok || !result.success || !Array.isArray(result.data)) {
+        throw new Error(result.message || 'Cannot load visitors.');
+      }
+
+      const visitor = result.data.find(v => {
+        return String(v.VisitorEmail || '').trim().toLowerCase() === accountEmail;
+      });
+
+      if (!visitor) return null;
+
+      user.visitorId = visitor.VisitorID;
+      if (window.AUTH && typeof AUTH.setUser === 'function') {
+        AUTH.setUser(user);
+      }
+
+      return visitor.VisitorID;
+    }
+
+    function formatTicketPriceForApi(item) {
+      const price = item.isFree ? 0 : Number(item.price) || 0;
+      return price.toFixed(2);
+    }
 
     function getLocalHistoryUserId() {
       return getAccountKey(user);
@@ -627,9 +718,11 @@
       const userId = getLocalHistoryUserId();
       const subtotal = order.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
       const discountAmount = Math.max(0, subtotal - order.total);
+      const ticketIds = Array.isArray(order.ticketIds) ? order.ticketIds : [];
       const ticketId = generateLocalTicketId(history.length);
       const orderHistory = {
         TicketID: ticketId,
+        TicketIDs: ticketIds,
         AccountKey: userId,
         Username: user?.username || null,
         LocalUserID: userId,

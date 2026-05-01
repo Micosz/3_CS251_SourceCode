@@ -45,13 +45,15 @@
             <th>TicketID</th>
             <th>ประเภทตั๋ว</th>
             <th>Promocode</th>
+            <th>ราคา</th>
             <th>วันที่เข้าชม</th>
+            <th>วันที่ซื้อ</th>
             <th style="text-align:right;">การจัดการ</th>
           </tr>
         </thead>
         <tbody id="ticketTableBody">
           <tr>
-            <td colspan="6" style="text-align:center; padding:2rem;">กำลังโหลดข้อมูล...</td>
+            <td colspan="8" style="text-align:center; padding:2rem;">กำลังโหลดข้อมูล...</td>
           </tr>
         </tbody>
       </table>
@@ -65,7 +67,30 @@
 
     let ticketsData = [];
 
-    document.addEventListener('DOMContentLoaded', fetchTickets);
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchTickets();
+      setInterval(fetchTickets, 5000);
+    });
+
+    window.addEventListener('focus', fetchTickets);
+
+    function formatDate(iso) {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return '-';
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    }
+
+    function formatDateTime(iso) {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return '-';
+      return `${formatDate(iso)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    function formatPrice(value) {
+      const amount = Number(value) || 0;
+      return amount === 0 ? 'ฟรี' : amount.toLocaleString('th-TH', { maximumFractionDigits: 2 });
+    }
 
     async function fetchTickets() {
       try {
@@ -77,14 +102,14 @@
         }
       } catch (err) {
         console.error(err);
-        document.getElementById('ticketTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center;">โหลดข้อมูลไม่สำเร็จ</td></tr>';
+        document.getElementById('ticketTableBody').innerHTML = '<tr><td colspan="8" style="text-align:center;">โหลดข้อมูลไม่สำเร็จ</td></tr>';
       }
     }
 
     function renderTickets() {
       const tbody = document.getElementById('ticketTableBody');
       if (ticketsData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">ไม่มีข้อมูลตั๋วในระบบ</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">ไม่มีข้อมูลตั๋วในระบบ</td></tr>';
         return;
       }
 
@@ -96,7 +121,7 @@
         if (t.VisitorID !== lastVisitorId) {
             html += `
                 <tr style="background: #f1f5f9; border-top: 2px solid #cbd5e0;">
-                    <td colspan="6" style="padding: 0.5rem 1.5rem; font-weight: bold; color: #475569; font-size: 0.85rem;">
+                    <td colspan="8" style="padding: 0.5rem 1.5rem; font-weight: bold; color: #475569; font-size: 0.85rem;">
                         👤 ผู้เข้าชม: ${t.VisitorFName ? t.VisitorFName + ' ' + t.VisitorLName : 'Visitor #' + t.VisitorID}
                     </td>
                 </tr>
@@ -110,7 +135,9 @@
               <td style="font-weight:bold;">#${t.TicketID}</td>
               <td><span style="color:#2d6a4f; font-weight:bold;">${t.TicketType}</span></td>
               <td>${t.PromotionCode || '-'}</td>
-              <td>${t.VisitDate}</td>
+              <td>${formatPrice(t.Price)}</td>
+              <td>${formatDate(t.VisitDate)}</td>
+              <td>${formatDateTime(t.PurchaseDate)}</td>
               <td style="text-align:right;">
                 <div class="action-btns">
                   <button class="btn-edit" onclick="duplicateTicket(${idx})" title="เพิ่มตั๋วใบใหม่สำหรับ User นี้">เพิ่ม +</button>

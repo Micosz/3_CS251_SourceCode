@@ -99,7 +99,7 @@ router.post('/', async (req, res) => {
       price
     } = req.body;
 
-    if (!visitorId || !ticketType || !visitDate || !price) {
+    if (!ticketType || !visitDate || price === undefined || price === null) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields'
@@ -110,9 +110,9 @@ router.post('/', async (req, res) => {
       INSERT INTO Ticket 
       (VisitorID, PromotionID, TicketType, VisitDate, TicketExpireDate, PurchaseChannel, PurchaseDate, Price)
       VALUES (?, ?, ?, ?, DATE_ADD(?, INTERVAL 1 DAY), 'Online', NOW(), ?)
-    `, [visitorId, promotionId || null, ticketType, visitDate, visitDate, price]);
+    `, [visitorId || null, promotionId || null, ticketType, visitDate, visitDate, price]);
 
-    res.json({ success: true, id: result.insertId });
+    res.json({ success: true, id: result.insertId, TicketID: result.insertId });
 
   } catch (err) {
     console.error(err);
