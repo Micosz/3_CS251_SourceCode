@@ -106,7 +106,7 @@
         gender: a.Gender,
         zoneId: a.ZoneID,
         zone: a.ZoneName || 'ไม่ระบุโซน',
-        cageCode: a.EnclosureID || '-',
+        arrivalDate: formatDate(a.ArrivalDate),
         cardImage: `images/animals/${a.AnimalID}.png`
       }));
 
@@ -120,6 +120,14 @@
         </div>
       `;
     }
+  }
+
+  // ================= DATE HELPER =================
+  function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(`${dateStr}T00:00:00`);
+    if (Number.isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
   // ================= RENDER =================
@@ -158,7 +166,7 @@
 
           <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
             <span class="badge badge-gray">⚥ ${a.gender}</span>
-            <span class="badge badge-gray">📦 ${a.cageCode}</span>
+            <span class="badge badge-gray">📅 ${a.arrivalDate}</span>
           </div>
 
           <a href="animal-detail.html?id=${a.id}" class="btn btn-sm">

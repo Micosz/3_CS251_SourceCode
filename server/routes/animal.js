@@ -10,7 +10,8 @@ router.get('/', async (req, res) => {
         a.AnimalID,
         a.AnimalName,
         a.Gender,
-        a.BirthDate,
+        DATE_FORMAT(a.BirthDate, '%Y-%m-%d') AS BirthDate,
+        DATE_FORMAT(a.ArrivalDate, '%Y-%m-%d') AS ArrivalDate,
         s.SpeciesName,
         z.ZoneID,
         z.ZoneName
