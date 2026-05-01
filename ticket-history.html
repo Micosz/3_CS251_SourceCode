@@ -238,27 +238,143 @@
 
     initNavbar('history');
 
+    const TICKET_HISTORY_KEY = 'zoo_ticket_history';
+
     // ================= FORMAT DATE =================
     function formatDate(iso) {
       const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return '-';
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
     }
 
     // ================= LOAD =================
-    async function loadHistory() {
-      try {
-        const res = await fetch(`/api/tickets/visitor/${user.visitorId}`);
-        const result = await res.json();
+    function loadHistory() {
+      const history = normalizeTicketHistory(getLocalTicketHistory()).filter(t => {
+        return isHistoryOwner(t);
+      });
 
-        if (result.success) {
-          renderHistory(result.data);
-        } else {
-          showToast('ไม่สามารถโหลดประวัติได้', 'error');
-        }
+      renderHistory(history);
+    }
+
+    function getLocalHistoryUserId() {
+      return getAccountKey(user);
+    }
+
+    function getCurrentHistoryKeys() {
+      return [
+        getAccountKey(user),
+        user?.username ? String(user.username) : null,
+        user?.id ? `user:${user.id}` : null,
+        user?.visitorId ? `visitor:${user.visitorId}` : null,
+        user?.adminId ? `admin:${user.adminId}` : null
+      ]
+        .filter(value => value !== null && value !== undefined && value !== '')
+        .map(value => String(value));
+    }
+
+    function getAccountKey(account) {
+      if (account?.username) return `username:${account.username}`;
+      if (account?.id) return `user:${account.id}`;
+      if (account?.visitorId) return `visitor:${account.visitorId}`;
+      if (account?.adminId) return `admin:${account.adminId}`;
+      return 'guest';
+    }
+
+    function isHistoryOwner(ticket) {
+      const keys = getCurrentHistoryKeys();
+      const ownerKeys = [
+        ticket.AccountKey,
+        ticket.Username,
+        normalizeStoredOwnerKey(ticket.LocalUserID),
+        ticket.UserID ? `user:${ticket.UserID}` : null,
+        ticket.VisitorID ? `visitor:${ticket.VisitorID}` : null,
+        ticket.AdminID ? `admin:${ticket.AdminID}` : null
+      ]
+        .filter(value => value !== null && value !== undefined && value !== '' && value !== 'guest')
+        .map(value => String(value));
+
+      return ownerKeys.some(key => keys.includes(key));
+    }
+
+    function normalizeStoredOwnerKey(value) {
+      if (value === null || value === undefined || value === '' || value === 'guest') return null;
+      const key = String(value);
+      if (key.includes(':')) return key;
+      return null;
+    }
+
+    function getLocalTicketHistory() {
+      try {
+        const data = localStorage.getItem(TICKET_HISTORY_KEY);
+        const history = data ? JSON.parse(data) : [];
+        return Array.isArray(history) ? history : [];
       } catch (err) {
-        console.error(err);
+        console.error('Ticket history read error:', err);
+        return [];
       }
+    }
+
+    function normalizeTicketHistory(history) {
+      const orders = [];
+      const legacyGroups = {};
+
+      history.forEach(ticket => {
+        if (Array.isArray(ticket.Items)) {
+          orders.push(ticket);
+          return;
+        }
+
+        const key = [
+          ticket.LocalUserID || ticket.VisitorID || 'guest',
+          ticket.PaymentRef || ticket.TicketID,
+          ticket.PurchaseDate || '',
+          ticket.VisitDate || ''
+        ].join('|');
+
+        if (!legacyGroups[key]) {
+          legacyGroups[key] = {
+            TicketID: ticket.PaymentRef ? `L${String(ticket.PaymentRef).slice(-8)}` : ticket.TicketID,
+            AccountKey: ticket.AccountKey,
+            Username: ticket.Username,
+            LocalUserID: ticket.LocalUserID,
+            UserID: ticket.UserID,
+            VisitorID: ticket.VisitorID,
+            AdminID: ticket.AdminID,
+            Items: [],
+            Subtotal: 0,
+            DiscountAmount: 0,
+            PromotionCode: ticket.PromotionCode || null,
+            VisitDate: ticket.VisitDate,
+            PurchaseDate: ticket.PurchaseDate,
+            PaymentMethod: ticket.PaymentMethod,
+            PaymentRef: ticket.PaymentRef,
+            OrderTotal: ticket.OrderTotal,
+            Status: ticket.Status || 'paid'
+          };
+        }
+
+        const price = Number(ticket.Price) || 0;
+        legacyGroups[key].Items.push({
+          TicketType: ticket.TicketType,
+          Qty: 1,
+          UnitPrice: price,
+          LineTotal: price,
+          IsFree: price === 0
+        });
+        legacyGroups[key].Subtotal += price;
+      });
+
+      Object.values(legacyGroups).forEach(order => {
+        const total = Number.isFinite(Number(order.OrderTotal)) ? Number(order.OrderTotal) : order.Subtotal;
+        order.Price = total;
+        order.OrderTotal = total;
+        order.DiscountAmount = Math.max(0, order.Subtotal - total);
+        order.TicketType = order.Items.map(item => `${item.TicketType} x${item.Qty}`).join(', ');
+        orders.push(order);
+      });
+
+      return orders;
     }
 
     function renderHistory(history) {
@@ -268,15 +384,18 @@
         return;
       }
 
+      document.getElementById('history-empty').style.display = 'none';
+      document.getElementById('history-table').style.display = 'block';
+
       const tbody = document.getElementById('history-tbody');
       tbody.innerHTML = history.map(t => `
         <tr>
           <td class="ticket-id">#${t.TicketID}</td>
           <td class="ticket-date">${formatDate(t.PurchaseDate)}</td>
-          <td class="ticket-type">${t.TicketType}</td>
+          <td class="ticket-type">${formatTicketSummary(t)}</td>
           <td class="ticket-price">฿${t.Price}</td>
           <td style="text-align:right;">
-            <button class="btn-detail" onclick="showDetail(${t.TicketID})">
+            <button class="btn-detail" onclick="showDetail('${t.TicketID}')">
               ดูรายละเอียด
             </button>
           </td>
@@ -285,25 +404,36 @@
     }
 
     // ================= DETAIL =================
-    async function showDetail(ticketId) {
+    function showDetail(ticketId) {
       try {
-        const res = await fetch(`/api/tickets/${ticketId}`);
-        const result = await res.json();
-        if (!result.success) return;
+        const t = normalizeTicketHistory(getLocalTicketHistory())
+          .find(ticket => String(ticket.TicketID) === String(ticketId));
+        if (!t) return;
 
-        const t = result.data;
+        const itemRows = getOrderItems(t).map(item => `
+          <div class="detail-row">
+            <span class="detail-label">Ticket ${item.TicketType} x${item.Qty}</span>
+            <span class="detail-value">${item.IsFree ? 'ฟรี' : formatBaht(item.LineTotal)}</span>
+          </div>
+        `).join('');
+
+        const discountRow = t.PromotionCode ? `
+          <div class="detail-row">
+            <span class="detail-label">รหัสส่วนลด ${t.PromotionCode}</span>
+            <span class="detail-value">-${formatBaht(t.DiscountAmount || 0)}</span>
+          </div>
+        ` : '';
+
         const rows = `
           <div class="detail-row">
             <span class="detail-label">หมายเลขตั๋ว</span>
             <span class="detail-value">#${t.TicketID}</span>
           </div>
+          ${itemRows}
+          ${discountRow}
           <div class="detail-row">
-            <span class="detail-label">ประเภทบัตร</span>
-            <span class="detail-value">${t.TicketType}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">ราคา</span>
-            <span class="detail-value">฿${t.Price}</span>
+            <span class="detail-label">รายการทั้งหมด</span>
+            <span class="detail-value">${formatBaht(t.OrderTotal ?? t.Price)}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">วันที่เข้าชม</span>
@@ -312,6 +442,14 @@
           <div class="detail-row">
             <span class="detail-label">วันที่ซื้อ</span>
             <span class="detail-value">${formatDate(t.PurchaseDate)}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Payment Ref</span>
+            <span class="detail-value">${t.PaymentRef ? '#' + String(t.PaymentRef).slice(-8) : '-'}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Payment Method</span>
+            <span class="detail-value">${t.PaymentMethod || '-'}</span>
           </div>
         `;
 
@@ -324,6 +462,26 @@
 
     function closeDetailModal() {
       document.getElementById('detail-modal').classList.remove('active');
+    }
+
+    function getOrderItems(order) {
+      if (Array.isArray(order.Items)) return order.Items;
+      return [{
+        TicketType: order.TicketType,
+        Qty: 1,
+        UnitPrice: Number(order.Price) || 0,
+        LineTotal: Number(order.Price) || 0,
+        IsFree: Number(order.Price) === 0
+      }];
+    }
+
+    function formatTicketSummary(order) {
+      return getOrderItems(order).map(item => `${item.TicketType} x${item.Qty}`).join(', ');
+    }
+
+    function formatBaht(value) {
+      const amount = Number(value) || 0;
+      return `฿${amount}`;
     }
 
     // Close modal when click outside

@@ -556,22 +556,17 @@
           const promo = CART.getPromo();
           const today = new Date().toISOString().split('T')[0];
 
-          // We create a ticket record for each quantity of each item
-          for (const item of items) {
-            for (let i = 0; i < item.qty; i++) {
-              await fetch('/api/tickets', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  visitorId: user.visitorId,
-                  promotionId: promo ? promo.id : null,
-                  ticketType: item.type,
-                  visitDate: today,
-                  price: item.price
-                })
-              });
-            }
-          }
+          const paymentRef = document.getElementById('qr-ref')?.textContent || generatePaymentRef();
+
+          saveLocalTicketHistory({
+            items,
+            method,
+            promo,
+            ref: paymentRef,
+            total,
+            visitDate: today,
+            purchaseDate: new Date().toISOString()
+          });
 
           CART.clear();
           updateCartBadge();
@@ -600,6 +595,79 @@
         }
 
       }, 0);
+    }
+
+    const TICKET_HISTORY_KEY = 'zoo_ticket_history';
+
+    function getLocalHistoryUserId() {
+      return getAccountKey(user);
+    }
+
+    function getAccountKey(account) {
+      if (account?.username) return `username:${account.username}`;
+      if (account?.id) return `user:${account.id}`;
+      if (account?.visitorId) return `visitor:${account.visitorId}`;
+      if (account?.adminId) return `admin:${account.adminId}`;
+      return 'guest';
+    }
+
+    function getLocalTicketHistory() {
+      try {
+        const data = localStorage.getItem(TICKET_HISTORY_KEY);
+        const history = data ? JSON.parse(data) : [];
+        return Array.isArray(history) ? history : [];
+      } catch (err) {
+        console.error('Ticket history read error:', err);
+        return [];
+      }
+    }
+
+    function saveLocalTicketHistory(order) {
+      const history = getLocalTicketHistory();
+      const userId = getLocalHistoryUserId();
+      const subtotal = order.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const discountAmount = Math.max(0, subtotal - order.total);
+      const ticketId = generateLocalTicketId(history.length);
+      const orderHistory = {
+        TicketID: ticketId,
+        AccountKey: userId,
+        Username: user?.username || null,
+        LocalUserID: userId,
+        VisitorID: user?.visitorId || null,
+        UserID: user?.id || null,
+        AdminID: user?.adminId || null,
+        TicketType: order.items.map(item => `${item.type} x${item.qty}`).join(', '),
+        Price: order.total,
+        Items: order.items.map(item => ({
+          TicketType: item.type,
+          Qty: item.qty,
+          UnitPrice: item.price,
+          LineTotal: item.price * item.qty,
+          IsFree: !!item.isFree || item.price === 0
+        })),
+        Subtotal: subtotal,
+        DiscountAmount: discountAmount,
+        PromotionCode: order.promo ? order.promo.code : null,
+        VisitDate: order.visitDate,
+        PurchaseDate: order.purchaseDate,
+        PaymentMethod: order.method,
+        PaymentRef: order.ref,
+        OrderTotal: order.total,
+        Status: 'paid'
+      };
+
+      localStorage.setItem(TICKET_HISTORY_KEY, JSON.stringify([
+        orderHistory,
+        ...history
+      ]));
+    }
+
+    function generateLocalTicketId(offset) {
+      return `L${Date.now()}${String(offset).padStart(2, '0')}`;
+    }
+
+    function generatePaymentRef() {
+      return '00' + Math.floor(Math.random() * 9e12).toString().padStart(13, '0');
     }
 
     document.getElementById('success-modal')
