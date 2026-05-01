@@ -306,7 +306,10 @@
       // info
       const infoData = [
         { label: 'เพศ', value: a.Gender },
-        { label: 'รหัสกรง', value: a.EnclosureID }
+        { label: 'รหัสกรง', value: a.EnclosureID },
+        { label: 'วันที่เข้ากรง', value: formatAnimalDate(a.ArrivalDate) },
+        { label: 'พ่อ', value: formatParentName(a.FatherName, a.FatherID) },
+        { label: 'แม่', value: formatParentName(a.MotherName, a.MotherID) }
       ];
 
       document.getElementById('animal-info-rows').innerHTML = infoData.map(r => `
@@ -322,6 +325,23 @@
       document.getElementById('not-found').style.display = 'block';
       document.getElementById('animal-detail').style.display = 'none';
     }
+  }
+
+  function formatAnimalDate(date) {
+    if (!date) return '-';
+    const d = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(d.getTime())) return date;
+    return d.toLocaleDateString('th-TH', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+
+  function formatParentName(name, id) {
+    if (name) return `${name} (#${id})`;
+    if (id) return `รหัส ${id}`;
+    return 'ไม่ระบุ';
   }
 
   loadAnimalDetail();

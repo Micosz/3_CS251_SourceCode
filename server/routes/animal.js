@@ -68,6 +68,8 @@ router.get('/:id', async (req, res) => {
         DATE_FORMAT(a.ArrivalDate, '%Y-%m-%d') AS ArrivalDate,
         a.FatherID,
         a.MotherID,
+        father.AnimalName AS FatherName,
+        mother.AnimalName AS MotherName,
         s.SpeciesName,
         s.TaxonomyCategory,
         s.Origin,
@@ -77,6 +79,8 @@ router.get('/:id', async (req, res) => {
         z.ZoneID,
         z.ZoneName
       FROM Animal a
+      LEFT JOIN Animal father ON a.FatherID = father.AnimalID
+      LEFT JOIN Animal mother ON a.MotherID = mother.AnimalID
       LEFT JOIN Species s ON a.SpeciesID = s.SpeciesID
       LEFT JOIN Enclosure e ON a.EnclosureID = e.EnclosureID
       LEFT JOIN Zone z ON e.ZoneID = z.ZoneID
