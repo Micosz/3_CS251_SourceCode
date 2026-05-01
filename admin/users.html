@@ -125,9 +125,9 @@
         if (isSuperAdmin && !isSelf) {
           const currentRole = u.Role.toLowerCase();
           if (currentRole === 'admin') {
-            actionBtn = `<button class="btn-action btn-demote" onclick="changeRole(${u.UserID}, 'user')">ลดขั้นเป็น User</button>`;
+            actionBtn = `<button class="btn-action btn-demote" onclick="changeRole(${u.UserID}, 'Visitor')">ลดขั้นเป็น Visitor</button>`;
           } else {
-            actionBtn = `<button class="btn-action btn-promote" onclick="changeRole(${u.UserID}, 'admin')">ตั้งเป็น Admin</button>`;
+            actionBtn = `<button class="btn-action btn-promote" onclick="changeRole(${u.UserID}, 'Admin')">ตั้งเป็น Admin</button>`;
           }
         }
 
@@ -147,7 +147,7 @@
     }
 
     async function changeRole(userId, newRole) {
-      const actionText = newRole === 'admin' ? 'ตั้งให้เป็น Admin' : 'ลดสถานะเป็น User';
+      const actionText = newRole.toLowerCase() === 'admin' ? 'ตั้งให้เป็น Admin' : 'ลดสถานะเป็น Visitor';
       if (!confirm(`ยืนยันการ ${actionText} สำหรับผู้ใช้นี้ใช่หรือไม่?`)) return;
 
       const currentUser = window.AUTH.getUser();

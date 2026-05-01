@@ -10,7 +10,7 @@ const router = require('express').Router();
 const pool = require('../db');
 
 function normalizeRole(role) {
-  return String(role || 'user').trim().toLowerCase();
+  return String(role || 'Visitor').trim().toLowerCase();
 }
 
 function buildSession(row) {
